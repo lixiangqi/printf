@@ -1,5 +1,7 @@
 #lang racket
 
+(require "medic-structs.rkt")
+
 (provide (rename-out [module-begin #%module-begin])
          #%top-interaction)
 
@@ -10,22 +12,6 @@
 
 (define (interp stx)
   
-  ; env structure
-  ; exports, imports: list of identifiers
-  ; import-table: list of pair (layer-id, list-of-exported-ids)
-  ; src-table: map from identifier to source expressions (all expanded, no ref form inside)
-  ; debug-table: map from identifier to debugging matching expressions (may contain ref form, lazy evaluation)
-  (struct env (exports imports import-table src-table debug-table) #:transparent)
-  
-  ; at-insert structure
-  ; scope: list of function identifier or ‘module
-  ; target: the target expression to be located
-  ; before: the expressions before the target expression
-  ; after: the expressions after the target expression
-  ; loc: ‘exit or ‘entry
-  ; insert-exprs: expressions to be inserted
-  (struct at-insert (scope target before after loc insert-exprs) #:transparent)
-   
   (define current-layer-id #f)
   (define exports '())
   (define imports '())
@@ -157,7 +143,7 @@
       [[on-exit src-expr ...]
        (insert-expr 'exit (map interpret-src-expr (syntax->list #'(src-expr ...))))]
       [else
-       (interpret-at-expr stx fn scope-ids)]))
+       (interpret-at-expr stx fn (map (lambda (i) (format "~a" i)) scope-ids))]))
   
   (define (interpret-at-expr stx fn scope)
     
@@ -169,12 +155,7 @@
            extract)]
         [else (format "~a" (syntax->datum stx))]))
     
-    (syntax-case stx (at with-start each-expression)
-      [[(at each-expression) border-expr ...]
-       (for-each (lambda (e) 
-                   (interpret-border-expr e fn scope 'each-expression)) 
-                 (syntax->list #'(border-expr ...)))]
-      
+    (syntax-case stx (at with-start)
       [[(at (with-start |part-of-expr|)) border-expr ...]
        (let* ([str (format "~a" (syntax->datum #'part-of-expr))]
               [extract (car (regexp-match #rx"[^|].+[^|]" str))])
@@ -193,7 +174,7 @@
        (let ([target-exp (format "~a" (syntax->datum #'location-expr))]
              [after-exp (map interpret-location-expr (syntax->list #'(expr ...)))])
          (for-each (lambda (e) 
-                     (interpret-border-expr e fn scope target-exp after-exp)) 
+                     (interpret-border-expr e fn scope target-exp '() after-exp)) 
                    (syntax->list #'(border-expr ...))))]
       
       [[(at location-expr) border-expr ...]
@@ -204,10 +185,6 @@
       [else
        (error 'invalid-debugging-expression "expr = ~a\n" (syntax->datum stx))]))
   
-  ; fn: string of filename
-  ; scope: list of identifiers
-  ; target-exp: 'each-expression or string 
-  ; before, after: null or string
   (define (interpret-border-expr stx fn scope target-exp [before '()] [after '()])
     
     (define (add-at-insert s)

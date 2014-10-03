@@ -1,6 +1,7 @@
 #lang racket
 
-(provide g)
+(provide g
+         posn)
 
 (define (g x) 
   (printf "g: x=~a\n" x)

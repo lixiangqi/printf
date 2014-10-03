@@ -1,19 +1,34 @@
 #lang racket
 
 (require racket/gui
-         syntax/modread)
+         syntax/modread
+         "medic-structs.rkt")
 
 (provide eval/annotations)
 
-; (struct at-insert (scope target before after loc insert-exprs) #:transparent)
-
 ; filename: complete-path-string
 (define (build-input-port filename at-table)
-  (printf "build-input-port ... \n")
   (define text (make-object text%))
   (send text insert-file filename)
-  (printf "get-text:~v\n" (send text get-text))
-  (printf "search-res=~v\n" (send text find-string "(define y 3)" 'forward 0))
+  (define new-at-table
+    (map (lambda (entry)
+           (let* ([positions (send text find-string-all (at-insert-target entry) 'forward  0)]
+                  [possible-posns (filter (lambda (p)
+                                            (and (if (equal? (first (at-insert-scope entry)) "module")
+                                                     #t
+                                                     (andmap (lambda (fun) 
+                                                               (or (send text find-string (string-append "define (" fun) 'backward p)
+                                                                   (send text find-string (string-append "define " fun) 'backward p)))
+                                                             (at-insert-scope entry)))
+                                                 (if (equal? (at-insert-before entry) '())
+                                                     #t
+                                                     (andmap (lambda (e) (send text find-string e 'backward p)) (at-insert-before entry)))
+                                                 (if (equal? (at-insert-after entry) '())
+                                                     #t
+                                                     (andmap (lambda (e) (send text find-string e 'forward p)) (at-insert-after entry)))))
+                                          positions)])
+             (finer-at-insert (at-insert-scope entry) (at-insert-target entry) possible-posns (at-insert-loc entry) (at-insert-exprs entry))))
+         at-table))
   (let ([p (open-input-file filename)])
     (port-count-lines! p)
     (let ([p (cond [(regexp-match-peek "^WXME01[0-9][0-9] ## " p)
@@ -33,7 +48,7 @@
                   (when (eq? prev #\\)
                     (loop))
                   (lloop c))))))
-      (values p filename))))
+      (values p filename new-at-table))))
 
 (define (eval/annotations initial-module annotate-module? annotator insert-tables at-tables)
   (parameterize
@@ -48,16 +63,12 @@
                   [else
                    (ocload/use-compiled fn m)])))]
        [current-namespace (make-base-namespace)])
-    (eval #`(require #,initial-module))
-    
-;     (define fn "/home/xiangqi/printf/racket/pkgs/drracket-pkgs/drracket/gui-debugger/printf/test/src3.rkt")
-;     (build-input-port fn (hash-ref at-tables fn #f))
-    ))
+    (eval #`(require #,initial-module))))
 
 ; fn: complete file path
 (define (load-module/annotate annotator fn m insert-table at-table)
   (let-values ([(base _ __) (split-path fn)]
-                 [(in-port src) (build-input-port fn at-table)])
+               [(in-port src new-at-table) (build-input-port fn at-table)])
     (dynamic-wind
      (lambda () (void))
      
@@ -69,7 +80,7 @@
           (lambda ()
             (let* ([first (parameterize ([current-namespace (make-base-namespace)])
                             (expand (read-syntax src in-port)))]
-                   [module-ized-exp (annotator (check-module-form first m fn) insert-table)]
+                   [module-ized-exp (annotator (check-module-form first m fn) insert-table new-at-table)]
                    [second (read in-port)])
               (unless (eof-object? second)
                 (raise-syntax-error

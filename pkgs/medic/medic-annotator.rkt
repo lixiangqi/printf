@@ -111,8 +111,7 @@
                                       all-but-last-body)
                                  (list (annotate
                                         last-body
-                                        all-bindings)))]
-                 [local-debug-info (assemble-debug-info new-bindings new-bindings 'normal #f)])
+                                        all-bindings)))])
             (with-syntax ([(new-rhs/trans ...) new-rhs])
               (quasisyntax/loc expr
                 (label (((var ...) new-rhs/trans) ...)
