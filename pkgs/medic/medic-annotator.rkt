@@ -6,7 +6,7 @@
            (prefix-in srfi: srfi/1/search)
            (for-syntax scheme/base)
            (only-in mzscheme [apply plain-apply])
-           )
+           "medic-structs.rkt")
   (provide annotate-stx)
   
   (define (disarm stx) (syntax-disarm stx code-insp))
@@ -24,8 +24,9 @@
       [(var . others)
        (cons #'var (arglist-bindings #'others))]))
   
-  (define (annotate-stx stx insert-table)
+  (define (annotate-stx stx insert-table at-table)
     (printf "annotate-stx: insert-table=~v\n" insert-table)
+    (printf "annotate-stx: at-table=~v\n" at-table)
     (define top-level-ids '())
     
     (define (add-top-level-id var)
@@ -91,6 +92,17 @@
         (annotate stx '())]))
     
     (define (annotate expr bound-vars [id #f])
+      
+      ; (struct finer-at-insert (scope target posns loc exprs) #:transparent)
+;      (for ([entry at-table])
+;        (printf "expr=~v, pos=~v\n" expr (syntax-position expr))
+;        (let ([res (ormap (lambda (p) (equal? (syntax-position expr) p)) (finer-at-insert-posns entry))])
+;          (when res
+;            (printf "expr=~v, pos=~v\n" expr (syntax-position expr))
+;        (printf "res=~v\n\n"
+;                res))
+;        ))
+;        
       
       (define (let/rec-values-annotator letrec?)
         (kernel:kernel-syntax-case

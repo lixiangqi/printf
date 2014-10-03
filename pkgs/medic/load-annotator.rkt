@@ -2,7 +2,8 @@
 
 (require racket/gui
          syntax/modread
-         "medic-structs.rkt")
+         "medic-structs.rkt"
+         "syntax-traversal.rkt")
 
 (provide eval/annotations)
 
@@ -13,20 +14,22 @@
   (define new-at-table
     (map (lambda (entry)
            (let* ([positions (send text find-string-all (at-insert-target entry) 'forward  0)]
-                  [possible-posns (filter (lambda (p)
-                                            (and (if (equal? (first (at-insert-scope entry)) "module")
-                                                     #t
-                                                     (andmap (lambda (fun) 
-                                                               (or (send text find-string (string-append "define (" fun) 'backward p)
-                                                                   (send text find-string (string-append "define " fun) 'backward p)))
-                                                             (at-insert-scope entry)))
-                                                 (if (equal? (at-insert-before entry) '())
-                                                     #t
-                                                     (andmap (lambda (e) (send text find-string e 'backward p)) (at-insert-before entry)))
-                                                 (if (equal? (at-insert-after entry) '())
-                                                     #t
-                                                     (andmap (lambda (e) (send text find-string e 'forward p)) (at-insert-after entry)))))
-                                          positions)])
+                  [filted
+                   (filter (lambda (p)
+                             (and (if (equal? (first (at-insert-scope entry)) "module")
+                                      #t
+                                      (andmap (lambda (fun) 
+                                                (or (send text find-string (string-append "define (" fun) 'backward p)
+                                                    (send text find-string (string-append "define " fun) 'backward p)))
+                                              (at-insert-scope entry)))
+                                  (if (equal? (at-insert-before entry) '())
+                                      #t
+                                      (andmap (lambda (e) (send text find-string e 'backward p)) (at-insert-before entry)))
+                                  (if (equal? (at-insert-after entry) '())
+                                      #t
+                                      (andmap (lambda (e) (send text find-string e 'forward p)) (at-insert-after entry)))))
+                           positions)]
+                  [possible-posns (map add1 filted)])
              (finer-at-insert (at-insert-scope entry) (at-insert-target entry) possible-posns (at-insert-loc entry) (at-insert-exprs entry))))
          at-table))
   (let ([p (open-input-file filename)])
@@ -78,15 +81,20 @@
          (unless m (raise 'module-name-not-passed-to-load-module/annotate))
          (with-module-reading-parameterization
           (lambda ()
-            (let* ([first (parameterize ([current-namespace (make-base-namespace)])
-                            (expand (read-syntax src in-port)))]
-                   [module-ized-exp (annotator (check-module-form first m fn) insert-table new-at-table)]
+            (let* ([stx (parameterize ([current-namespace (make-base-namespace)])
+                            (read-syntax src in-port))]
+                   [expanded (expand stx)]
+                   [module-ized-exp (annotator (check-module-form expanded m fn) insert-table new-at-table)]
                    [second (read in-port)])
               (unless (eof-object? second)
                 (raise-syntax-error
                  'load-module/annotate
                  (format "expected only a `module' declaration for `~s', but found an extra expression" m)
                  second))
+              
+              ; it seemes like the expanded stx and original stx share same positions
+              (printf "syntax-table:~v\n"  (traverse-stx expanded))
+              
               (eval-syntax module-ized-exp))))))
      
      (lambda () (close-input-port in-port)))))
