@@ -93,7 +93,11 @@
                  second))
               
               ; it seemes like the expanded stx and original stx share same positions
-              (printf "syntax-table:~v\n"  (traverse-stx expanded))
+              ;(printf "syntax-table:~v\n"  (traverse-stx expanded))
+;              (define test-stx #'(define x 1))
+;              
+;              (define attach (syntax-property test-stx 'test 'attached))
+;              (printf "expanded=~v\n" (expand attach))
               
               (eval-syntax module-ized-exp))))))
      

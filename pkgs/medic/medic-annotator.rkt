@@ -3,6 +3,7 @@
   (require (prefix-in kernel: syntax/kerncase)
            gui-debugger/marks
            mzlib/etc
+           racket/list
            (prefix-in srfi: srfi/1/search)
            (for-syntax scheme/base)
            (only-in mzscheme [apply plain-apply])
@@ -50,7 +51,9 @@
                                         #'mb
                                         #`(plain-module-begin
                                            ;xiangqi
-                                           #,(module-level-expr-iterator (expand #'(define y 2)) #t)
+                                           ;#,(module-level-expr-iterator (expand #'(define y 2)) #t)
+                                           
+                                           
                                            #,@(map (lambda (e) (module-level-expr-iterator e))
                                                    (syntax->list #'module-level-exprs))
                                            )))))])]))
@@ -64,6 +67,30 @@
         (general-top-level-expr-iterator stx medic?)]))
     
     (define (general-top-level-expr-iterator stx [medic? #f])
+      
+
+      
+      (when (syntax-position stx)
+        (let iterate ([lst at-table])
+          (unless (null? lst)
+            (let ([entry (first lst)])
+              (if (member (syntax-position stx) (finer-at-insert-posns entry))
+                  (let ([expanded (map (lambda (s) 
+                                         (expand (datum->syntax #f (syntax->datum s) s s)))
+                                       (finer-at-insert-exprs entry))])
+                    
+                  
+                
+                 (printf "stx... = ~v, general: ~v, expanded=~v\n" stx (syntax-position stx) expanded))
+                 (iterate (rest lst)))))))
+          
+          
+;      (when (and (syntax-position stx)
+;                 (ormap (lambda (p) (equal? p (syntax-position stx))) (finer-at-insert-posns))
+;        
+;
+;      (printf "stx = ~v, general: ~v\n" stx (syntax-position stx)))
+      
       (kernel:kernel-syntax-case
        stx #f
        [(define-values (var ...) expr)
@@ -93,16 +120,16 @@
     
     (define (annotate expr bound-vars [id #f])
       
-      ; (struct finer-at-insert (scope target posns loc exprs) #:transparent)
-;      (for ([entry at-table])
-;        (printf "expr=~v, pos=~v\n" expr (syntax-position expr))
-;        (let ([res (ormap (lambda (p) (equal? (syntax-position expr) p)) (finer-at-insert-posns entry))])
-;          (when res
-;            (printf "expr=~v, pos=~v\n" expr (syntax-position expr))
-;        (printf "res=~v\n\n"
-;                res))
-;        ))
-;        
+       ;(struct finer-at-insert (scope target posns loc exprs) #:transparent)
+      (for ([entry at-table])
+        ;(printf "expr=~v, pos=~v\n" expr (syntax-position expr))
+        (let ([res (ormap (lambda (p) (equal? (syntax-position expr) p)) (finer-at-insert-posns entry))])
+          (when res
+            (printf "expr=~v, pos=~v\n" expr (syntax-position expr))
+            (printf "res=~v\n\n"
+                    res))
+        ))
+        
       
       (define (let/rec-values-annotator letrec?)
         (kernel:kernel-syntax-case
