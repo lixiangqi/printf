@@ -3,7 +3,8 @@
 (require racket/gui
          syntax/modread
          "medic-structs.rkt"
-         "syntax-traversal.rkt")
+         "syntax-traversal.rkt"
+         "insert.rkt")
 
 (provide eval/annotations)
 
@@ -83,8 +84,8 @@
           (lambda ()
             (let* ([stx (parameterize ([current-namespace (make-base-namespace)])
                             (read-syntax src in-port))]
-                   [expanded (expand stx)]
-                   [module-ized-exp (annotator (check-module-form expanded m fn) insert-table new-at-table)]
+                   [inserted (expand (insert-stx (check-module-form (expand stx) m fn) insert-table new-at-table))]
+                   [module-ized-exp (annotator (check-module-form inserted m fn) insert-table new-at-table)]
                    [second (read in-port)])
               (unless (eof-object? second)
                 (raise-syntax-error
@@ -92,13 +93,7 @@
                  (format "expected only a `module' declaration for `~s', but found an extra expression" m)
                  second))
               
-              ; it seemes like the expanded stx and original stx share same positions
-              ;(printf "syntax-table:~v\n"  (traverse-stx expanded))
-;              (define test-stx #'(define x 1))
-;              
-;              (define attach (syntax-property test-stx 'test 'attached))
-;              (printf "expanded=~v\n" (expand attach))
-              
+              (printf "inserted ...=~v\n" inserted)
               (eval-syntax module-ized-exp))))))
      
      (lambda () (close-input-port in-port)))))

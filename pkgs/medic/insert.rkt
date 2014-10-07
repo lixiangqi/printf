@@ -8,7 +8,7 @@
            (for-syntax scheme/base)
            (only-in mzscheme [apply plain-apply])
            "medic-structs.rkt")
-  (provide annotate-stx)
+  (provide insert-stx)
   
   (define (disarm stx) (syntax-disarm stx code-insp))
   (define (rearm old new) (syntax-rearm new old))
@@ -25,10 +25,12 @@
       [(var . others)
        (cons #'var (arglist-bindings #'others))]))
   
-  (define (annotate-stx stx insert-table at-table)
-    (printf "annotate-stx: insert-table=~v\n" insert-table)
-    (printf "annotate-stx: at-table=~v\n" at-table)
+  (define (insert-stx stx insert-table at-table)
+    (printf "insert-stx: insert-table=~v\n" insert-table)
+    (printf "insert-stx: at-table=~v\n" at-table)
     (define top-level-ids '())
+    
+    (define (convert-stx s) (datum->syntax #f (syntax->datum s) s s))
     
     (define (add-top-level-id var)
       (set! top-level-ids (cons var top-level-ids)))
@@ -50,10 +52,6 @@
                                      #,(rearm
                                         #'mb
                                         #`(plain-module-begin
-                                           ;xiangqi
-                                           ;#,(module-level-expr-iterator (expand #'(define y 2)) #t)
-                                           
-                                           
                                            #,@(map (lambda (e) (module-level-expr-iterator e))
                                                    (syntax->list #'module-level-exprs))
                                            )))))])]))
@@ -68,80 +66,62 @@
     
     (define (general-top-level-expr-iterator stx [medic? #f])
       
-      #;(when (syntax-position stx)
+      (define ret #f)
+      (define to-remove? #f)
+      (define pos (syntax-position stx))
+      (when (syntax-position stx)
         (let iterate ([lst at-table])
           (unless (null? lst)
-            (let ([entry (first lst)])
-              (if (member (syntax-position stx) (finer-at-insert-posns entry))
-                  (let ([expanded (map expand (finer-at-insert-exprs entry))]
-                        [loc (finer-at-insert-loc entry)])
-                    (printf "stx... = ~v, general: ~v, expanded=~v\n" stx (syntax-position stx) expanded))
-                 (iterate (rest lst)))))))
-      
-      #;(when (syntax-position stx)
-        (let iterate ([lst at-table])
-          (unless (null? lst)
-            (let ([entry (first lst)])
-              (if (member (syntax-position stx) (finer-at-insert-posns entry))
-                  (let ([expanded (map (lambda (s) 
-                                         (expand (datum->syntax #f (syntax->datum s) s s)))
-                                       (finer-at-insert-exprs entry))]
-                        [loc (finer-at-insert-loc entry)])
-                    (case loc
+            (let* ([entry (first lst)]
+                   [at-posns (finer-at-insert-posns entry)]
+                   [insert-exprs (finer-at-insert-exprs entry)])
+              (if (member pos at-posns)
+                  (begin
+                    (if (equal? (length at-posns) 1) 
+                        (set! to-remove? #t)
+                        (set-finer-at-insert-posns! entry (remove pos at-posns)))
+                    (case (finer-at-insert-loc entry)
                       [(entry) 
-                       (for-each (lambda (e) (general-top-level-expr-iterator e #t))
-                                 expanded)]
-                      [(exit) (void)]))
-                  (iterate (rest lst))))))) ; remember to remove matched case from the list
-          
-          
-;      (when (and (syntax-position stx)
-;                 (ormap (lambda (p) (equal? p (syntax-position stx))) (finer-at-insert-posns))
-;        
-;
-;      (printf "stx = ~v, general: ~v\n" stx (syntax-position stx)))
+                       (set! ret (quasisyntax/loc stx (begin (begin #,@(map convert-stx insert-exprs))
+                                                             #,stx)))]
+                      [(exit)
+                       (set! ret (quasisyntax/loc stx (begin #,stx
+                                                             (begin #,@(map convert-stx insert-exprs)))))]))
+                  (iterate (rest lst)))))))
+      ; remove the matched case from at-table
+      (when to-remove? 
+        (set! at-table (remove pos at-table (lambda (p entry) (equal? (car (finer-at-insert-posns entry)) p)))))
       
-      ; (printf "general...stx=~v, medic=~v\n" stx medic?)
-      
-      (kernel:kernel-syntax-case
-       stx #f
-       [(define-values (var ...) expr)
-        (begin
-          (for-each (lambda (v)
-                      (when (or medic? (syntax-original? v))
-                        (add-top-level-id v)))
-                    (syntax->list #'(var ...)))
-        (quasisyntax/loc stx
-          (define-values (var ...) #,(annotate #`expr '() (syntax->datum (car (syntax->list #'(var ...))))))))]
-       [(define-syntaxes (var ...) expr)
-        stx]
-       [(begin-for-syntax . exprs)
-        stx]
-       [(begin . top-level-exprs)
-        (quasisyntax/loc stx (begin #,@(map (lambda (expr)
-                                              (module-level-expr-iterator expr))
-                                            (syntax->list #'top-level-exprs))))]
-       [(#%require . require-specs)
-        stx]
-       [(module . _)
-        (module-annotate stx)]
-       [(module* . _)
-        (module-annotate stx)]
-       [else
-        (annotate stx '())]))
+      (or ret 
+          (kernel:kernel-syntax-case
+           stx #f
+           [(define-values (var ...) expr)
+            (begin
+              (for-each (lambda (v)
+                          (when (or medic? (syntax-original? v))
+                            (add-top-level-id v)))
+                        (syntax->list #'(var ...)))
+              (quasisyntax/loc stx
+                (define-values (var ...) #,(annotate #`expr '() (syntax->datum (car (syntax->list #'(var ...))))))))]
+           [(define-syntaxes (var ...) expr)
+            stx]
+           [(begin-for-syntax . exprs)
+            stx]
+           [(begin . top-level-exprs)
+            (quasisyntax/loc stx (begin #,@(map (lambda (expr)
+                                                  (module-level-expr-iterator expr))
+                                                (syntax->list #'top-level-exprs))))]
+           [(#%require . require-specs)
+            stx]
+           [(module . _)
+            (module-annotate stx)]
+           [(module* . _)
+            (module-annotate stx)]
+           [else
+            (annotate stx '())])))
     
     (define (annotate expr bound-vars [id #f])
-       ;(struct finer-at-insert (scope target posns loc exprs) #:transparent)
-      #;(for ([entry at-table])
-        ;(printf "expr=~v, pos=~v\n" expr (syntax-position expr))
-        (let ([res (ormap (lambda (p) (equal? (syntax-position expr) p)) (finer-at-insert-posns entry))])
-          (when res
-            (printf "expr=~v, pos=~v\n" expr (syntax-position expr))
-            (printf "res=~v\n\n"
-                    res))
-        ))
-        
-      
+     
       (define (let/rec-values-annotator letrec?)
         (kernel:kernel-syntax-case
          (disarm expr) #f
@@ -177,44 +157,6 @@
             (quasisyntax/loc clause
                   (arg-list
                    #,@new-bodies)))]))
-      
-      #;(define (lambda-clause-annotator clause)
-        (kernel:kernel-syntax-case
-         clause #f
-         [(arg-list . bodies)
-          (let* ([new-bound-vars (arglist-bindings #'arg-list)]
-                 [all-bound-vars (append new-bound-vars bound-vars)]
-                 [new-bodies (map (lambda (e) (annotate e all-bound-vars)) (syntax->list #'bodies))]
-                 [to-insert (hash-ref insert-table id #f)]) ; in the future to-insert is a list of pair of inserts
-           ; (if (hash-has-key? insert-table 'each-function)
-            
-            
-            (if (and id to-insert)
-                (let* ([first (car to-insert)]
-                       [locator (car first)]
-                       [insert-expr (cdr first)]
-                       [ins (datum->syntax (car new-bound-vars) '(printf "z =~a\n" z) #'bodies)] 
-                                                           
-                       #;[ins (datum->syntax (car new-bound-vars) (syntax->datum insert-expr) #'bodies)])
-                  ;(printf "first vars=~a\n" (car new-bound-vars))
-                  ;(printf "ins=~a\n" ins)
-                  ;(printf "first expr=~a\n" (car new-bodies))
-                  
-                  (case locator
-                    [(entry) (printf "content=~a\n" insert-expr)]
-                    [else (error 'scope-table "unknown locator: ~a" locator)])
-                  (quasisyntax/loc clause
-                    (arg-list
-                     (begin
-                       ;(printf "x = ~a\n" 1)
-                       ;#,ins
-                       #,@new-bodies)))
-                  )
-                
-                (quasisyntax/loc clause
-                  (arg-list 
-                   (printf "hehe\n")
-                   #,@new-bodies))))]))
       
       (define annotated
         (rearm
