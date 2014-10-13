@@ -1,10 +1,13 @@
 #lang racket
 
 (require "load-annotator.rkt"
-         "medic-annotator.rkt")
+         "medic-annotator.rkt"
+         "redirect.rkt")
 
 (provide medic
-         debug)
+         debug
+         display-layer
+         display-logs)
 
 (define medic-insert-table #f)
 (define medic-at-table #f)
@@ -49,4 +52,17 @@
                             (let ([fn-str (path->string fn)])
                               (or (and medic-insert-table (hash-has-key? medic-insert-table fn-str))
                                   (and medic-at-table (hash-has-key? medic-at-table fn-str)))))])
-    (eval/annotations mod annotate-module? annotate-stx medic-insert-table medic-at-table)))
+    (eval/annotations mod annotate-module? annotate-stx medic-insert-table medic-at-table)
+    (generate-logs)))
+
+(define (display-logs)
+  (for ([l (access-logs)])
+    (printf "~a\n" l)))
+
+(define (display-layer layer)
+  (define logs (access-layer layer))
+  (if (null? logs)
+      (error 'invalid-layer-identifier "display-layer: layer-id = ~a\n" layer)
+      (for ([l (access-layer layer)])
+        (printf "~a\n" l))))
+  

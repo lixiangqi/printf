@@ -15,24 +15,20 @@
   (define new-at-table
     (map (lambda (entry)
            (let* ([positions (send text find-string-all (at-insert-target entry) 'forward  0)]
-                  [filted
+                  [filtered
                    (filter (lambda (p)
-                             (and (if (equal? (first (at-insert-scope entry)) "module")
-                                      #t
-                                      (andmap (lambda (fun) 
-                                                (or (send text find-string (string-append "define (" fun) 'backward p)
-                                                    (send text find-string (string-append "define " fun) 'backward p)))
-                                              (at-insert-scope entry)))
-                                  (if (equal? (at-insert-before entry) '())
+                             (and (if (equal? (at-insert-before entry) '())
                                       #t
                                       (andmap (lambda (e) (send text find-string e 'backward p)) (at-insert-before entry)))
                                   (if (equal? (at-insert-after entry) '())
                                       #t
                                       (andmap (lambda (e) (send text find-string e 'forward p)) (at-insert-after entry)))))
                            positions)]
-                  [possible-posns (map add1 filted)])
+                  [possible-posns (map add1 filtered)])
              (finer-at-insert (at-insert-scope entry) (at-insert-target entry) possible-posns (at-insert-loc entry) (at-insert-exprs entry))))
          at-table))
+  ; filter out empty posns in finer-at-insert structure
+  (set! new-at-table (filter (lambda (a) (not (null? (finer-at-insert-posns a)))) new-at-table))
   (let ([p (open-input-file filename)])
     (port-count-lines! p)
     (let ([p (cond [(regexp-match-peek "^WXME01[0-9][0-9] ## " p)
@@ -61,8 +57,8 @@
           (lambda (fn m)
             (cond [(annotate-module? fn m)
                    (let* ([fn-str (path->string fn)]
-                          [insert-table (hash-ref insert-tables fn-str #f)]
-                          [at-table (hash-ref at-tables fn-str #f)])
+                          [insert-table (hash-ref insert-tables fn-str '())]
+                          [at-table (hash-ref at-tables fn-str '())])
                      (load-module/annotate annotator fn m insert-table at-table))]
                   [else
                    (ocload/use-compiled fn m)])))]
@@ -92,8 +88,6 @@
                  'load-module/annotate
                  (format "expected only a `module' declaration for `~s', but found an extra expression" m)
                  second))
-              
-              (printf "inserted ...=~v\n" inserted)
               (eval-syntax module-ized-exp))))))
      
      (lambda () (close-input-port in-port)))))

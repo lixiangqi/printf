@@ -30,9 +30,9 @@
   ; from scope-id to a list of pairs ((or 'exit 'entry), to-be-inserted-exprs)
   ; scope-id:
   ; - 'module
-  ; - function name
+  ; - function name (string)
   ; - 'each-function
-  ; - (cons 'start 'part-of-fun-name) 
+  ; - (cons 'start part-of-fun-name-string) 
   (define insert-table (make-hash))
   
   ; at-inserts: map from complete path string to a list of at-insert structure
@@ -87,6 +87,12 @@
       [else
        (error 'invalid-debugging-expression "expr = ~a\n" (syntax->datum stx))]))
   
+  (define (extract-start-string str)
+    (define extract (or (regexp-match #rx"[^|].+[^|]" str) str))
+    (when (list? extract)
+      (set! extract (car extract)))
+    extract)
+  
   ; interpret-match-expr: syntax string-of-file-name -> void
   (define (interpret-match-expr stx fn)
     (syntax-case stx (ref at each-function with-start each-expression)
@@ -108,16 +114,16 @@
       [[each-function to-insert ...]
        (for-each (lambda (e) (interpret-insert-expr e fn (list 'each-function))) (syntax->list #'(to-insert ...)))]
       
-      [[(with-start |part-of-fun-name| to-insert ...)]
+      [[(with-start |part-of-fun-name|) to-insert ...]
        (let* ([str (format "~a" (syntax->datum #'part-of-fun-name))]
-              [extract (car (regexp-match #rx"[^|].+[^|]" str))])
-         (for-each (lambda (e) (interpret-insert-expr e fn (list ' with-start extract))) (syntax->list #'(to-insert ...))))]
+              [extract (extract-start-string str)])
+         (for-each (lambda (e) (interpret-insert-expr e fn (list 'with-start extract))) (syntax->list #'(to-insert ...))))]
       
       [[(at expr ...) border-expr ...]
        (interpret-insert-expr stx fn (list 'module))]
       
       [[(f ...) to-insert ...]
-       (let ([funs (map (lambda (f) (syntax->datum f)) (syntax->list #'(f ...)))])
+       (let ([funs (map (lambda (f) (format "~a" (syntax->datum f))) (syntax->list #'(f ...)))])
          (for-each (lambda (e) 
                      (interpret-insert-expr e fn funs))
                    (syntax->list #'(to-insert ...))))]
@@ -151,26 +157,35 @@
       (syntax-case stx (with-start)
         [(with-start |part-of-expr|)
          (let* ([str (format "~a" (syntax->datum #'part-of-expr))]
-                [extract (car (regexp-match #rx"[^|].+[^|]" str))])
+                [extract (extract-start-string str)])
            extract)]
         [else (format "~a" (syntax->datum stx))]))
     
     (syntax-case stx (at with-start)
       [[(at (with-start |part-of-expr|)) border-expr ...]
        (let* ([str (format "~a" (syntax->datum #'part-of-expr))]
-              [extract (car (regexp-match #rx"[^|].+[^|]" str))])
+              [extract (extract-start-string str)])
          (for-each (lambda (e) 
                      (interpret-border-expr e fn scope extract)) 
                    (syntax->list #'(border-expr ...))))]
       
-      [[(at location-expr #:before expr ...) border-expr ...]
+      [[(at location-expr [#:before expr1 ...] [#:after expr2 ...]) border-expr ...]
+       (let ([target-exp (format "~a" (syntax->datum #'location-expr))]
+             [before-exp (map interpret-location-expr (syntax->list #'(expr1 ...)))]
+             [after-exp (map interpret-location-expr (syntax->list #'(expr2 ...)))])
+         (for-each (lambda (e) 
+                     (interpret-border-expr e fn scope target-exp before-exp after-exp)) 
+                   (syntax->list #'(border-expr ...))))]
+      
+      
+      [[(at location-expr [#:before expr ...]) border-expr ...]
        (let ([target-exp (format "~a" (syntax->datum #'location-expr))]
              [before-exp (map interpret-location-expr (syntax->list #'(expr ...)))])
          (for-each (lambda (e) 
                      (interpret-border-expr e fn scope target-exp before-exp)) 
                    (syntax->list #'(border-expr ...))))]
       
-      [[(at location-expr #:after expr ...) border-expr ...]
+      [[(at location-expr [#:after expr ...]) border-expr ...]
        (let ([target-exp (format "~a" (syntax->datum #'location-expr))]
              [after-exp (map interpret-location-expr (syntax->list #'(expr ...)))])
          (for-each (lambda (e) 
@@ -250,13 +265,7 @@
     [else
      (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))])
   
-   (cons insert-table at-inserts)
-;  (printf "global-env=~v\n" global-env)
-;  (printf "\n")
-;  (printf "insert-table=~v\n" insert-table)
-;  (printf "\n")
-;  (printf "at-inserts=~v\n" at-inserts)
-  )
+   (cons insert-table at-inserts))
 
 (module reader syntax/module-reader
   medic)

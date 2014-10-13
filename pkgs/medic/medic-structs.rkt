@@ -18,4 +18,4 @@
 ; exprs: expressions to be inserted
 (struct at-insert (scope target before after loc exprs) #:transparent)
 
-(struct finer-at-insert (scope target [posns #:mutable] loc exprs) #:transparent)
+(struct finer-at-insert ([scope #:mutable] target [posns #:mutable] loc exprs) #:transparent)
