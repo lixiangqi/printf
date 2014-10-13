@@ -251,9 +251,7 @@
                     (map interpret-src-expr found-expr))
                   (iterate (rest lst))))]))]
       
-      [(op form v ...) (equal? 'printf (syntax->datum #'op))
-       (syntax-property stx 'layer current-layer-id)]
-      [else stx]))
+      [else (syntax-property stx 'layer current-layer-id)]))
   
   
   

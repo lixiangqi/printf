@@ -3,7 +3,6 @@
 (require racket/gui
          syntax/modread
          "medic-structs.rkt"
-         "syntax-traversal.rkt"
          "insert.rkt")
 
 (provide eval/annotations)

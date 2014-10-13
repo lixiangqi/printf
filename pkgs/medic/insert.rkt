@@ -25,6 +25,8 @@
       [(var . others)
        (cons #'var (arglist-bindings #'others))]))
   
+  ; to do: right now every syntax is wrapped with layer info, maybe we can simpliy convert-stx
+  ; no need to wrap again.
   (define (insert-stx stx insert-table at-table)
     (define top-level-ids '())
     
@@ -35,12 +37,10 @@
               (if (syntax->list new-stx)
                   (map (lambda (i) 
                          (if (identifier? i) 
-                             ;(syntax-property i 'medic #t)
                              (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
                              i)) 
                        (syntax->list new-stx))
                   new-stx)])
-        (printf "convert...s=~v, prop=~v\n" s layer-prop)
         (datum->syntax #f tagged s s)))
     
     ; when local? is #t, match at-pattern expression within function scope
@@ -79,7 +79,7 @@
                         [(exit)
                          (iterate (rest lst)
                                   (syntax-property (quasisyntax/loc expr (begin #,result-stx
-                                                                                #,@(map convert-stx insert-exprs)))
+                                                                                 #,@(map convert-stx insert-exprs)))
                                                    'debug #t))]))
                     (iterate (rest lst) result-stx))))))
       (for-each (lambda (e) 
@@ -145,7 +145,7 @@
     (define (general-top-level-expr-iterator stx)
       
       (define ret (match-at-table stx #f))
-      
+          
       (or ret 
           (kernel:kernel-syntax-case
            stx #f
@@ -246,12 +246,37 @@
                    exprs))
             
             (define attached-entries (attach-stx-property entry-exprs))
-            (printf "new-bodies...=~v\n" new-bodies)
+            
+            (define (traverse exp body)
+              (if (syntax-property exp 'debug)
+                  (let ([enriched-lst (syntax->list exp)]
+                        [plain-lst (syntax->list body)]
+                        [ret '()])
+                    (for ([j (in-range (length enriched-lst))])
+                      (let* ([layer-prop (syntax-property (list-ref enriched-lst j) 'layer)]
+                             [ele (list-ref plain-lst j)]
+                             [attached 
+                              (if (and layer-prop (syntax->list ele))
+                                  (map (lambda (i)
+                                         (if (identifier? i)
+                                             (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
+                                             i))
+                                       (syntax->list ele))
+                                  ele)])
+                        (set! ret (append ret (list attached)))))
+                    ret)
+                  (let ([decomposed-exp (syntax->list exp)]
+                        [decomposed-body (syntax->list body)])
+                    (if decomposed-exp
+                        (map (lambda (e b) (traverse e b)) decomposed-exp decomposed-body)
+                        body))))
+           
             (define attached-bodies
               (map (lambda (exp)
                      (define body (list-ref return-lst body-index))
                      (set! body-index (add1 body-index))
-                     (if (syntax-property exp 'debug)
+                     (traverse exp body)
+                     #;(if (syntax-property exp 'debug)
                          (let ([enriched-lst (syntax->list exp)]
                                [plain-lst (syntax->list body)]
                                [ret '()])
@@ -266,7 +291,6 @@
                                                     i))
                                               (syntax->list ele))
                                          ele)])
-                               (printf "exp=~v, layer=~v\n" exp layer-prop)
                                (set! ret (append ret (list attached)))))
                            ret)
                          body))

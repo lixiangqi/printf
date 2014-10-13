@@ -12,7 +12,7 @@
   
 (define (set-up-output-port) output-port)
 
-(define (add-layer-id id) (printf "en..\n") (set! layers (append layers (list id))))
+(define (add-layer-id id) (set! layers (append layers (list id))))
 
 (define (generate-logs)
   (define in (open-input-string (get-output-string output-port)))
