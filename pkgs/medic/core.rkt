@@ -14,7 +14,7 @@
 
 ; fn can be relative-path or complete path
 ; e.g. (medic "/home/xiangqi/printf/racket/pkgs/drracket-pkgs/drracket/gui-debugger/printf/test/debug1.rkt"
-;                 "debug2.rkt")
+;             "debug2.rkt")
 
 (define (medic fn . fns)
   (let* ([files (map (lambda (f) (if (complete-path? f) `(file ,f) f)) (append (list fn) fns))]
@@ -53,7 +53,7 @@
                               (or (and medic-insert-table (hash-has-key? medic-insert-table fn-str))
                                   (and medic-at-table (hash-has-key? medic-at-table fn-str)))))])
     (eval/annotations mod annotate-module? annotate-stx medic-insert-table medic-at-table)
-    (generate-logs)))
+    (process-logs)))
 
 (define (display-logs)
   (for ([l (access-logs)])
