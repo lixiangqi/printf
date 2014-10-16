@@ -5,6 +5,10 @@
 (provide (rename-out [module-begin #%module-begin])
          #%top-interaction)
 
+
+(module reader syntax/module-reader
+  medic)
+
 (define-syntax-rule (module-begin form ...)
   (#%module-begin 
    (provide medic-table)
@@ -40,7 +44,7 @@
   
   (define (interpret-layer-form stx)
     (syntax-case stx (layer)
-      [(layer layer-id layer-expr ...) (identifier? #'layer-id)
+      [(layer layer-id #:enable flag layer-expr ...) (identifier? #'layer-id)
        (begin
          (set! current-layer-id (syntax->datum #'layer-id))
          (set! exports '())
@@ -49,13 +53,15 @@
          (set! src-table (make-hash))
          (set! debug-table (make-hash))
          (for-each (lambda (expr) 
-                     (interpret-expr expr))
+                     (interpret-expr expr (syntax->datum #'flag)))
                    (syntax->list #'(layer-expr ...)))
-         (hash-set! global-env current-layer-id (env exports imports import-table src-table debug-table)))]
+         (hash-set! global-env current-layer-id (env exports imports import-table src-table debug-table)))]    
+      [(layer layer-id layer-expr ...) (identifier? #'layer-id)
+       (interpret-layer-form (syntax/loc stx (layer layer-id #:enable #t layer-expr ...)))]                                          
       [else
        (error 'invalid-debugging-expression "expr = ~a\n" (syntax->datum stx))]))
   
-  (define (interpret-expr stx)
+  (define (interpret-expr stx flag)
     (syntax-case stx (def in)
       [(def src-id #:src src-expr ...) (identifier? #'src-id)
        (if (member (syntax->datum #'src-id) imports)
@@ -65,14 +71,16 @@
       [(def debug-id #:debug expr ...) (identifier? #'debug-id) ; expr ... is lazy evaluated, may contain unexpanded (ref ...) form
        (hash-set! debug-table (syntax->datum #'debug-id) #'(expr ...))]
       [(in #:file id expr ...)
-       (let ([fn (path->string 
-                  (resolved-module-path-name 
-                   ((current-module-name-resolver) (syntax->datum #'id) #f #f)))])
-         (unless (hash-has-key? insert-table fn)
-           (hash-set! insert-table fn (make-hash)))
-         (for-each (lambda (e)
-                     (interpret-match-expr e fn))
-                   (syntax->list #'(expr ...))))]
+       (if flag
+           (let ([fn (path->string 
+                      (resolved-module-path-name 
+                       ((current-module-name-resolver) (syntax->datum #'id) #f #f)))])
+             (unless (hash-has-key? insert-table fn)
+               (hash-set! insert-table fn (make-hash)))
+             (for-each (lambda (e)
+                         (interpret-match-expr e fn))
+                       (syntax->list #'(expr ...))))
+           (cons insert-table at-inserts))]
       [(op id ...) (equal? 'import (syntax->datum #'op))
        (let ([imported-ids (map 
                              (lambda (id) 
@@ -177,7 +185,6 @@
                      (interpret-border-expr e fn scope target-exp before-exp after-exp)) 
                    (syntax->list #'(border-expr ...))))]
       
-      
       [[(at location-expr [#:before expr ...]) border-expr ...]
        (let ([target-exp (format "~a" (syntax->datum #'location-expr))]
              [before-exp (map interpret-location-expr (syntax->list #'(expr ...)))])
@@ -232,7 +239,6 @@
        (let* ([exprs (map interpret-src-expr (syntax->list #'(src-expr ...)))]
               [at-struct (at-insert scope target-exp before after 'exit exprs)])
          (add-at-insert at-struct))]))
-    
   
   (define (interpret-src-expr stx)
     (syntax-case stx (ref)
@@ -253,8 +259,6 @@
       
       [else (syntax-property stx 'layer current-layer-id)]))
   
-  
-  
   (syntax-case stx (begin layer)
     [(begin (layer layer-id layer-expr ...) ...)
      (for-each (lambda (l) 
@@ -264,6 +268,3 @@
      (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))])
   
    (cons insert-table at-inserts))
-
-(module reader syntax/module-reader
-  medic)
