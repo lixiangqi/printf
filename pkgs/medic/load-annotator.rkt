@@ -64,7 +64,7 @@
        [current-namespace (make-base-namespace)])
     (eval #`(require #,initial-module))))
 
-; fn: complete file path
+; fn: complete-path-string
 (define (load-module/annotate annotator fn m insert-table at-table)
   (let-values ([(base _ __) (split-path fn)]
                [(in-port src new-at-table) (build-input-port fn at-table)])
