@@ -2,7 +2,7 @@
 
 (provide set-up-output-port
          add-layer-id
-         generate-logs
+         process-logs
          access-layer
          access-logs)
 
@@ -14,7 +14,7 @@
 
 (define (add-layer-id id) (set! layers (append layers (list id))))
 
-(define (generate-logs)
+(define (process-logs)
   (define in (open-input-string (get-output-string output-port)))
   (let iterate ([line (read-line in)])
     (unless (eof-object? line)
