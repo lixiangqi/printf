@@ -63,6 +63,6 @@
   (define logs (access-layer layer))
   (if (null? logs)
       (error 'invalid-layer-identifier "display-layer: layer-id = ~a\n" layer)
-      (for ([l (access-layer layer)])
+      (for ([l logs])
         (printf "~a\n" l))))
   

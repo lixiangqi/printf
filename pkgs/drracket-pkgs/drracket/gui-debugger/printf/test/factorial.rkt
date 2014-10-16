@@ -4,7 +4,6 @@
   (if (zero? x)
       1
       (* x 5)))
-
 (fact 3)
 
 (define (fg x)
@@ -15,3 +14,4 @@
   )
 
 (fg 5)
+

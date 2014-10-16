@@ -148,9 +148,11 @@
          (kernel:kernel-syntax-case
           (disarm expr) #f
           [var-stx (identifier? (syntax var-stx))
+                   (begin
+                    ; (printf "var-stx...=~v\n" #'var-stx)
                    (if (syntax-property #'var-stx 'medic)
                        (or (find-bound-var/wrap-context #'var-stx bound-vars) expr)
-                       expr)]
+                       expr))]
           
           [(#%plain-lambda . clause)
            (quasisyntax/loc expr 
@@ -198,18 +200,16 @@
                                      (when (equal? (syntax->datum e) 'printf)
                                        (set! layer (syntax-property e 'layer))
                                        (when (and id-layer (not layer))
-                                         (set! layer id-layer)))
+                                         (set! layer id-layer))
+                                       (unless layer
+                                         (set! layer (syntax-property expr 'layer))))
                                      (annotate e bound-vars id-layer))
                                    (syntax->list #'exprs)))
-             
              (define port (set-up-output-port))
-             (unless layer
-               (set! layer (syntax-property expr 'layer)))
-             
              (if layer
                  (quasisyntax/loc expr
                    (parameterize ([current-output-port #,port])
-                     #,(add-layer-id layer)
+                     (#%plain-app #,add-layer-id '#,layer)
                      (#%plain-app . #,subexprs)))
                  (quasisyntax/loc expr
                    (#%plain-app . #,subexprs))))]
@@ -220,6 +220,7 @@
           [else (error 'expr-syntax-object-iterator "unknown expr: ~a"
                        (syntax->datum expr))])))
       annotated)
+    
     
     (values (top-level-annotate stx)))
   )

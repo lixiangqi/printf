@@ -12,7 +12,8 @@
   
 (define (set-up-output-port) output-port)
 
-(define (add-layer-id id) (set! layers (append layers (list id))))
+(define (add-layer-id id) 
+  (set! layers (append layers (list id))))
 
 (define (process-logs)
   (define in (open-input-string (get-output-string output-port)))
@@ -20,7 +21,8 @@
     (unless (eof-object? line)
       (set! logs (append logs (list line)))
       (iterate (read-line in))))
-  (close-input-port in))
+  (close-input-port in)
+  (close-output-port output-port))
 
 (define (access-logs) logs)
 

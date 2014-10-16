@@ -1,43 +1,31 @@
 (module annotator scheme/base
   
   (require (prefix-in kernel: syntax/kerncase)
-           gui-debugger/marks
-           mzlib/etc
            racket/list
-           (prefix-in srfi: srfi/1/search)
            (for-syntax scheme/base)
            (only-in mzscheme [apply plain-apply])
            "medic-structs.rkt")
+  
   (provide insert-stx)
   
   (define (disarm stx) (syntax-disarm stx code-insp))
   (define (rearm old new) (syntax-rearm new old))
   (define code-insp (variable-reference->module-declaration-inspector
                      (#%variable-reference)))
-  
-  (define (arglist-bindings arglist-stx)
-    (syntax-case arglist-stx ()
-      [var
-       (identifier? arglist-stx)
-       (list arglist-stx)]
-      [(var ...)
-       (syntax->list arglist-stx)]
-      [(var . others)
-       (cons #'var (arglist-bindings #'others))]))
-  
-  ; to do: right now every syntax is wrapped with layer info, maybe we can simpliy convert-stx
-  ; no need to wrap again.
+
   (define (insert-stx stx insert-table at-table)
-    (define top-level-ids '())
     
     (define (convert-stx s) 
+      (printf "convert-stx: s=~v\n" s)
       (let* ([new-stx (datum->syntax #f (syntax->datum s) s s)]
              [layer-prop (syntax-property s 'layer)]
              [tagged 
               (if (syntax->list new-stx)
                   (map (lambda (i) 
+                         (printf "i..=~v\n" i)
                          (if (identifier? i) 
-                             (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
+                             (syntax-property i 'medic #t)
+                             ;(syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
                              i)) 
                        (syntax->list new-stx))
                   new-stx)])
@@ -239,6 +227,7 @@
                      (if (syntax->list body)
                          (map (lambda (i) 
                                 (if (identifier? i) 
+                                    ;(syntax-property i 'medic #t)
                                     (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
                                     i)) 
                               (syntax->list body))
@@ -259,6 +248,7 @@
                               (if (and layer-prop (syntax->list ele))
                                   (map (lambda (i)
                                          (if (identifier? i)
+                                             ;(syntax-property i 'medic #t)
                                              (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
                                              i))
                                        (syntax->list ele))
@@ -275,25 +265,7 @@
               (map (lambda (exp)
                      (define body (list-ref return-lst body-index))
                      (set! body-index (add1 body-index))
-                     (traverse exp body)
-                     #;(if (syntax-property exp 'debug)
-                         (let ([enriched-lst (syntax->list exp)]
-                               [plain-lst (syntax->list body)]
-                               [ret '()])
-                           (for ([j (in-range (length enriched-lst))])
-                             (let* ([layer-prop (syntax-property (list-ref enriched-lst j) 'layer)]
-                                    [ele (list-ref plain-lst j)]
-                                    [attached 
-                                     (if (and layer-prop (syntax->list ele))
-                                         (map (lambda (i)
-                                                (if (identifier? i)
-                                                    (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
-                                                    i))
-                                              (syntax->list ele))
-                                         ele)])
-                               (set! ret (append ret (list attached)))))
-                           ret)
-                         body))
+                     (traverse exp body))
                    new-bodies))
            (define attached-exits (attach-stx-property exit-exprs))
            
