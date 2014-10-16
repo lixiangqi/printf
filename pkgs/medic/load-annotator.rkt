@@ -23,7 +23,7 @@
                                       #t
                                       (andmap (lambda (e) (send text find-string e 'forward p)) (at-insert-after entry)))))
                            positions)]
-                  [possible-posns (map add1 filtered)])
+                  [possible-posns (map add1 filtered)]) ; need to increment one to match the position returned by syntax-position later
              (finer-at-insert (at-insert-scope entry) (at-insert-target entry) possible-posns (at-insert-loc entry) (at-insert-exprs entry))))
          at-table))
   ; filter out empty posns in finer-at-insert structure
