@@ -18,4 +18,6 @@
 ; exprs: expressions to be inserted
 (struct at-insert (scope target before after loc exprs) #:transparent)
 
+; finer-at-insert structure
+; constructed on top of at-insert structure, where posns contains the found expression positions in editor
 (struct finer-at-insert ([scope #:mutable] target [posns #:mutable] loc exprs) #:transparent)
