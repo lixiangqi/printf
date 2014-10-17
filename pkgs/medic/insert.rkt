@@ -8,11 +8,6 @@
            "medic-structs.rkt")
   
   (provide insert-stx)
-  
-  (define (disarm stx) (syntax-disarm stx code-insp))
-  (define (rearm old new) (syntax-rearm new old))
-  (define code-insp (variable-reference->module-declaration-inspector
-                     (#%variable-reference)))
 
   (define (insert-stx stx insert-table at-table)
     
@@ -323,4 +318,9 @@
             [else (error 'expr-syntax-object-iterator "unknown expr: ~a"
                          (syntax->datum expr))]))))
     
-    (top-level-insert stx)))
+    (top-level-insert stx))
+  
+  (define (disarm stx) (syntax-disarm stx code-insp))
+  (define (rearm old new) (syntax-rearm new old))
+  (define code-insp (variable-reference->module-declaration-inspector
+                     (#%variable-reference))))
