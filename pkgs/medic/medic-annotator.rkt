@@ -1,18 +1,10 @@
 (module annotator scheme/base
   
   (require (prefix-in kernel: syntax/kerncase)
-           mzlib/etc
-           racket/list
-           (prefix-in srfi: srfi/1/search)
            (for-syntax scheme/base)
            (only-in mzscheme [apply plain-apply])
            "redirect.rkt")
   (provide annotate-stx)
-  
-  (define (disarm stx) (syntax-disarm stx code-insp))
-  (define (rearm old new) (syntax-rearm new old))
-  (define code-insp (variable-reference->module-declaration-inspector
-                     (#%variable-reference)))
   
   (define (arglist-bindings arglist-stx)
     (syntax-case arglist-stx ()
@@ -48,8 +40,7 @@
                                         #'mb
                                         #`(plain-module-begin
                                            #,@(map (lambda (e) (module-level-expr-iterator e))
-                                                   (syntax->list #'module-level-exprs))
-                                           )))))])]))
+                                                   (syntax->list #'module-level-exprs)))))))])]))
     
     (define (module-level-expr-iterator stx)
       (kernel:kernel-syntax-case
@@ -68,7 +59,6 @@
           (for-each add-top-level-id (syntax->list #'(var ...)))
           (quasisyntax/loc stx
             (define-values (var ...) #,(annotate #`expr '() prop))))]
-       
        [(define-syntaxes (var ...) expr)
         stx]
        [(begin-for-syntax . exprs)
@@ -148,11 +138,9 @@
          (kernel:kernel-syntax-case
           (disarm expr) #f
           [var-stx (identifier? (syntax var-stx))
-                   (begin
-                    ; (printf "var-stx...=~v\n" #'var-stx)
                    (if (syntax-property #'var-stx 'medic)
                        (or (find-bound-var/wrap-context #'var-stx bound-vars) expr)
-                       expr))]
+                       expr)]
           
           [(#%plain-lambda . clause)
            (quasisyntax/loc expr 
@@ -171,9 +159,7 @@
            (quasisyntax/loc expr (begin #,@(map (lambda (e) (annotate e bound-vars id-layer)) (syntax->list #'bodies))))]
           
           [(begin0 . bodies)
-           (quasisyntax/loc expr (begin0 #,@(map (lambda (e) 
-                                                   (annotate e bound-vars id-layer))
-                                                 (syntax->list #'bodies))))]
+           (quasisyntax/loc expr (begin0 #,@(map (lambda (e) (annotate e bound-vars id-layer)) (syntax->list #'bodies))))]
           
           [(let-values . clause)
            (let/rec-values-annotator #f)]
@@ -221,8 +207,9 @@
                        (syntax->datum expr))])))
       annotated)
     
-    
-    (values (top-level-annotate stx)))
-  )
-
-
+    (top-level-annotate stx))
+  
+  (define (disarm stx) (syntax-disarm stx code-insp))
+  (define (rearm old new) (syntax-rearm new old))
+  (define code-insp (variable-reference->module-declaration-inspector
+                     (#%variable-reference))))
