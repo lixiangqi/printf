@@ -12,9 +12,7 @@
 
 ;(medic "debug4.rkt")
 ;(debug "src4.rkt")
-
+#|
 (medic "debug5.rkt")
 (debug "src5.rkt")
-
-;(display-logs)
-;(display-layer 'layer1)
+|#
