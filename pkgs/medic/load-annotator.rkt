@@ -49,7 +49,7 @@
                   (lloop c))))))
       (values p filename new-at-table))))
 
-(define (eval/annotations initial-module annotate-module? annotator insert-tables at-tables)
+(define (eval/annotations initial-module annotate-module? annotator insert-tables at-tables templates)
   (parameterize
       ([current-load/use-compiled
         (let ([ocload/use-compiled (current-load/use-compiled)])
@@ -57,15 +57,16 @@
             (cond [(annotate-module? fn m)
                    (let* ([fn-str (path->string fn)]
                           [insert-table (hash-ref insert-tables fn-str '())]
-                          [at-table (hash-ref at-tables fn-str '())])
-                     (load-module/annotate annotator fn m insert-table at-table))]
+                          [at-table (hash-ref at-tables fn-str '())]
+                          [template (hash-ref templates fn-str '())])
+                     (load-module/annotate annotator fn m insert-table at-table template))]
                   [else
                    (ocload/use-compiled fn m)])))]
        [current-namespace (make-base-namespace)])
     (eval #`(require #,initial-module))))
 
 ; fn: complete-path-string
-(define (load-module/annotate annotator fn m insert-table at-table)
+(define (load-module/annotate annotator fn m insert-table at-table template)
   (let-values ([(base _ __) (split-path fn)]
                [(in-port src new-at-table) (build-input-port fn at-table)])
     (dynamic-wind
@@ -80,7 +81,7 @@
             (let* ([stx (parameterize ([current-namespace (make-base-namespace)])
                             (read-syntax src in-port))]
                    [inserted (expand (insert-stx (check-module-form (expand stx) m fn) insert-table new-at-table))]
-                   [module-ized-exp (annotator (check-module-form inserted m fn) insert-table new-at-table)]
+                   [module-ized-exp (annotator (check-module-form inserted m fn) template)]
                    [second (read in-port)])
               (unless (eof-object? second)
                 (raise-syntax-error

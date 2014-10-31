@@ -42,6 +42,11 @@
   ; at-inserts: map from complete path string to a list of at-insert structure
   (define at-inserts (make-hash))
   
+  ; template: map from complete path string to a hash table, which maps
+  ; function name (symbol) to (list function-template-string args return-value)
+  ; one function can only take one logging behavior in one debugging program
+  (define template (make-hash))
+  
   (define (interpret-layer-form stx)
     (syntax-case stx (layer)
       [(layer layer-id #:enable flag layer-expr ...) (identifier? #'layer-id)
@@ -77,10 +82,12 @@
                        ((current-module-name-resolver) (syntax->datum #'id) #f #f)))])
              (unless (hash-has-key? insert-table fn)
                (hash-set! insert-table fn (make-hash)))
+             (unless (hash-has-key? template fn)
+               (hash-set! template fn (make-hash)))
              (for-each (lambda (e)
                          (interpret-match-expr e fn))
                        (syntax->list #'(expr ...))))
-           (cons insert-table at-inserts))]
+           (list insert-table at-inserts template))]
       [(op id ...) (equal? 'import (syntax->datum #'op))
        (let ([imported-ids (map 
                              (lambda (id) 
@@ -118,6 +125,16 @@
                   (let ([found-expr (hash-ref (env-debug-table (hash-ref global-env (car (first lst)))) id)])
                      (for-each (lambda (e) (interpret-match-expr e fn)) (syntax->list found-expr)))
                   (iterate (rest lst))))]))]
+      
+      [(: f s)
+       (let* ([fun (syntax->datum #'f)]
+              [str (format "~a" (syntax->datum #'s))]
+              [at-args (regexp-match* #px"@\\w+" str)]
+              [at-ret (regexp-match* #px"@,\\w+" str)]
+              [args (map (lambda (a) (string-trim a "@")) at-args)]
+              [ret (if (null? at-ret) at-ret (string-trim (first at-ret) "@,"))]
+              [table (hash-ref template fn)])
+         (hash-set! table fun (list str args ret)))]
       
       [[each-function to-insert ...]
        (for-each (lambda (e) (interpret-insert-expr e fn (list 'each-function))) (syntax->list #'(to-insert ...)))]
@@ -267,4 +284,4 @@
     [else
      (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))])
   
-   (cons insert-table at-inserts))
+   (list insert-table at-inserts template))

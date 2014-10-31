@@ -16,7 +16,7 @@
       [(var . others)
        (cons #'var (arglist-bindings #'others))]))
   
-  (define (annotate-stx stx insert-table at-table)
+  (define (annotate-stx stx template)
     (define top-level-ids '())
     
     (define (add-top-level-id var)
@@ -58,7 +58,7 @@
         (let ([prop (syntax-property stx 'layer)])
           (for-each add-top-level-id (syntax->list #'(var ...)))
           (quasisyntax/loc stx
-            (define-values (var ...) #,(annotate #`expr '() prop))))]
+            (define-values (var ...) #,(annotate #`expr '() prop (syntax->datum (car (syntax->list #'(var ...))))))))]
        [(define-syntaxes (var ...) expr)
         stx]
        [(begin-for-syntax . exprs)
@@ -76,7 +76,7 @@
        [else
         (annotate stx '())]))
     
-    (define (annotate expr bound-vars [id-layer #f])
+    (define (annotate expr bound-vars [id-layer #f] [id #f])
       
       (define (let/rec-values-annotator letrec?)
         (kernel:kernel-syntax-case
@@ -89,17 +89,17 @@
                  [new-rhs (map (lambda (expr)
                                  (annotate expr
                                            (if letrec? all-bindings bound-vars)
-                                           id-layer))
+                                           id-layer id))
                                (syntax->list #'(rhs ...)))]
                  [last-body (car (reverse (syntax->list #'bodies)))]
                  [all-but-last-body (reverse (cdr (reverse (syntax->list #'bodies))))]
                  [bodies (append (map (lambda (expr)
-                                        (annotate expr all-bindings id-layer))
+                                        (annotate expr all-bindings id-layer id))
                                       all-but-last-body)
                                  (list (annotate
                                         last-body
                                         all-bindings
-                                        id-layer)))])
+                                        id-layer id)))])
             (with-syntax ([(new-rhs/trans ...) new-rhs])
               (quasisyntax/loc expr
                 (label (((var ...) new-rhs/trans) ...)
@@ -111,9 +111,13 @@
          [(arg-list . bodies)
           (let* ([new-bound-vars (arglist-bindings #'arg-list)]
                  [all-bound-vars (append new-bound-vars bound-vars)]
-                 [new-bodies (map (lambda (e) (annotate e all-bound-vars id-layer)) (syntax->list #'bodies))])
+                 [new-bodies (map (lambda (e) (annotate e all-bound-vars id-layer id)) (syntax->list #'bodies))])
+            (when id
+              (printf "new bode=~v\n" new-bodies)
+              (printf "res...=~v\n" (hash-ref template id)))
             (quasisyntax/loc clause
                   (arg-list
+                  ; (printf "lambda entered.exp=~v\n" (list #,@new-bodies))
                    #,@new-bodies)))]))
       
       (define (find-bound-var/wrap-context var lst)
@@ -151,15 +155,15 @@
              (case-lambda #,@(map lambda-clause-annotator (syntax->list #'clauses))))]
           
           [(if test then else)
-           (quasisyntax/loc expr (if #,(annotate #'test bound-vars id-layer)
-                                     #,(annotate #'then bound-vars id-layer)
-                                     #,(annotate #'else bound-vars id-layer)))]
+           (quasisyntax/loc expr (if #,(annotate #'test bound-vars id-layer id)
+                                     #,(annotate #'then bound-vars id-layer id)
+                                     #,(annotate #'else bound-vars id-layer id)))]
           
           [(begin . bodies)
-           (quasisyntax/loc expr (begin #,@(map (lambda (e) (annotate e bound-vars id-layer)) (syntax->list #'bodies))))]
+           (quasisyntax/loc expr (begin #,@(map (lambda (e) (annotate e bound-vars id-layer id)) (syntax->list #'bodies))))]
           
           [(begin0 . bodies)
-           (quasisyntax/loc expr (begin0 #,@(map (lambda (e) (annotate e bound-vars id-layer)) (syntax->list #'bodies))))]
+           (quasisyntax/loc expr (begin0 #,@(map (lambda (e) (annotate e bound-vars id-layer id)) (syntax->list #'bodies))))]
           
           [(let-values . clause)
            (let/rec-values-annotator #f)]
@@ -168,7 +172,17 @@
            (let/rec-values-annotator #t)]
           
           [(set! var val)
-           (quasisyntax/loc expr (set! var #,(annotate #`val bound-vars id-layer)))]
+           (quasisyntax/loc expr (set! var #,(annotate #`val bound-vars id-layer id)))]
+          
+          [(quote (op datum)) (equal? 'log (syntax->datum #'op))
+           (if (identifier? (syntax->datum #'datum))
+               expr
+               (begin 
+               (quasisyntax/loc expr 
+                 (begin
+                  #,(annotate #'datum bound-vars id-layer id) 
+                 (printf "log entered. \n")))))
+           ]
           
           [(quote _) expr]
           
@@ -176,8 +190,8 @@
           
           [(with-continuation-mark key mark body)
            (quasisyntax/loc expr (with-continuation-mark key
-                                   #,(annotate #'mark bound-vars id-layer)
-                                   #,(annotate #'body bound-vars id-layer)))]
+                                   #,(annotate #'mark bound-vars id-layer id)
+                                   #,(annotate #'body bound-vars id-layer id)))]
           
           [(#%plain-app . exprs)
            (begin
@@ -189,7 +203,7 @@
                                          (set! layer id-layer))
                                        (unless layer
                                          (set! layer (syntax-property expr 'layer))))
-                                     (annotate e bound-vars id-layer))
+                                     (annotate e bound-vars id-layer id))
                                    (syntax->list #'exprs)))
              (define port (set-up-output-port))
              (if layer
