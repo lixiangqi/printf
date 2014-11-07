@@ -1,9 +1,12 @@
 #lang racket
 
+(provide quadtree-node%
+         quadtree%)
+
 (define quadtree-node%
   (class object%
     (field [leaf #t]
-           [nodes (list null null null null)]
+           [nodes (make-vector 4 #f)]
            [point #f]
            [x +nan.0]
            [y +nan.0]
@@ -11,7 +14,9 @@
            [cx +nan.0]
            [cy +nan.0]
            [point-charge +nan.0])
+    
     (define/public (get-leaf) leaf)
+    (define/public (set-leaf l) (set! leaf l))
     
     (define/public (get-x) x)
     (define/public (set-x new-x) (set! x new-x))
@@ -19,8 +24,19 @@
     (define/public (get-y) y)
     (define/public (set-y new-y) (set! y new-y))
     
+    (define/public (get-cx) cx)
+    (define/public (get-cy) cy)
+    
     (define/public (get-point) point)
     (define/public (set-point p) (set! point p))
+    
+    (define/public (get-charge) charge)
+    (define/public (set-charge c) (set! charge c))
+    
+    (define/public (get-point-charge) point-charge)
+    (define/public (set-point-charge c) (set! point-charge c))
+    
+    (define/public (get-nodes) nodes)
     
     (super-new)))
 
@@ -74,11 +90,35 @@
       (define sy (* (+ y1 y2) 0.5))
       (define right (>= x sx))
       (define bottom (>= y sy))
-      
-      
-         
-        
-      
+      (define i (+ (arithmetic-shift (if bottom 1 0) 1) (if right 1 0)))
+      ; recursively insert into the child node
+      (send n set-leaf #f)
+      (define nodes (send n get-nodes))
+      (unless (vector-ref nodes i) (vector-set! nodes i (new quadtree-node%)))
+      ; update the bounds
+      (if right 
+          (set! x1 sx)
+          (set! x2 sx))
+      (if bottom
+          (set! y1 sy)
+          (set! y2 sy))
+      (insert (vector-ref nodes i) v x y x1 y1 x2 y2))
+    
+    (define/public (visit f) (quadtree-visit f root x1 y1 x2 y2))
+    
+    (define/private (quadtree-visit f node x1 y1 x2 y2)
+      (unless (f node x1 y1 x2 y2)
+        (let* ([sx (* (+ x1 x2) 0.5)]
+               [sy (* (+ y1 y2) 0.5)]
+               [children (send node get-nodes)]
+               [c0 (vector-ref children 0)]
+               [c1 (vector-ref children 1)]
+               [c2 (vector-ref children 2)]
+               [c3 (vector-ref children 3)])
+          (when c0 (quadtree-visit f c0 x1 y1 sx sy))
+          (when c1 (quadtree-visit f c1 sx y1 x2 sy))
+          (when c2 (quadtree-visit f c2 x1 sy sx y2))
+          (when c3 (quadtree-visit f c3 sx sy x2 y2)))))
     
     (super-new)
     (for-each
