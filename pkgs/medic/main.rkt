@@ -110,7 +110,7 @@
   
   ; interpret-match-expr: syntax string-of-file-name -> void
   (define (interpret-match-expr stx fn)
-    (syntax-case stx (ref at each-function with-start each-expression)
+    (syntax-case stx (ref at with-action each-function with-start each-expression)
       [(ref debug-id)
        (let* ([id (syntax->datum #'debug-id)]
               [expr (hash-ref debug-table id #f)])
@@ -126,7 +126,7 @@
                      (for-each (lambda (e) (interpret-match-expr e fn)) (syntax->list found-expr)))
                   (iterate (rest lst))))]))]
       
-      [(: f s)
+      [(with-action f s)
        (let* ([fun (syntax->datum #'f)]
               [str (format "~a" (syntax->datum #'s))]
               [at-args (regexp-match* #px"@\\w+" str)]
@@ -284,4 +284,4 @@
     [else
      (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))])
   
-   (list insert-table at-inserts template))
+  (list insert-table at-inserts template))
