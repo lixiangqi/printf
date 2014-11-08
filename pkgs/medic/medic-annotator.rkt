@@ -3,7 +3,8 @@
   (require (prefix-in kernel: syntax/kerncase)
            (for-syntax scheme/base)
            (only-in mzscheme [apply plain-apply])
-           "redirect.rkt")
+           "redirect.rkt"
+           "visual-util.rkt")
   (provide annotate-stx)
   
   (define (arglist-bindings arglist-stx)
@@ -120,6 +121,18 @@
                   ; (printf "lambda entered.exp=~v\n" (list #,@new-bodies))
                    #,@new-bodies)))]))
       
+      (define (edge-expression-annotator e)
+        (syntax-case e ()
+          [(_ from-node to-node)
+           #`(#%plain-app #,add-edge from-node to-node #f (format "~a" from-node) (format "~a" to-node))]
+          [(_ from-node to-node edge-label)
+           #`(#%plain-app #,add-edge from-node to-node edge-label (format "~a" from-node) (format "~a" to-node))]
+          [(_ from-node to-node edge-label from-label)
+           #`(#%plain-app #,add-edge from-node to-node edge-label from-label (format "~a" to-node))]
+          [(_ from-node to-node edge-label from-label to-label)
+           #`(#%plain-app #,add-edge from-node to-node edge-label from-label to-label)]))
+        
+      
       (define (find-bound-var/wrap-context var lst)
         (define (find-bound-var var-lst)
           (define ret #f)
@@ -140,8 +153,8 @@
       (define annotated
         (rearm
          expr
-         (kernel:kernel-syntax-case
-          (disarm expr) #f
+         (kernel:kernel-syntax-case*
+          (disarm expr) #f (edge)
           [var-stx (identifier? (syntax var-stx))
                    (if (syntax-property #'var-stx 'medic)
                        (or (find-bound-var/wrap-context #'var-stx bound-vars) expr)
@@ -184,27 +197,35 @@
                                    #,(annotate #'mark bound-vars id-layer id)
                                    #,(annotate #'body bound-vars id-layer id)))]
           
+          [(#%plain-app edge from-node to-node . labels)
+           (begin (printf "edge case entered...\n")
+           expr)]
+                        
           [(#%plain-app . exprs)
            (begin
-             (define layer #f)
-             ;(printf "app....=~v\n" expr)
-             (define subexprs (map (lambda (e) 
-                                     (when (equal? (syntax->datum e) 'printf)
-                                       (set! layer (syntax-property e 'layer))
-                                       (when (and id-layer (not layer))
-                                         (set! layer id-layer))
-                                       (unless layer
-                                         (set! layer (syntax-property expr 'layer))))
-                                     (annotate e bound-vars id-layer id))
-                                   (syntax->list #'exprs)))
-             (define port (set-up-output-port))
-             (if layer
-                 (quasisyntax/loc expr
-                   (parameterize ([current-output-port #,port])
-                     (#%plain-app #,add-layer-id '#,layer)
-                     (#%plain-app . #,subexprs)))
-                 (quasisyntax/loc expr
-                   (#%plain-app . #,subexprs))))]
+             (define exprs-lst (syntax->list #'exprs))
+             (cond
+               [(equal? (syntax->datum (car exprs-lst)) 'edge)
+                (edge-expression-annotator #'exprs)]
+               [else
+                (define layer #f)
+                (define subexprs (map (lambda (e) 
+                                        (when (equal? (syntax->datum e) 'printf)
+                                          (set! layer (syntax-property e 'layer))
+                                          (when (and id-layer (not layer))
+                                            (set! layer id-layer))
+                                          (unless layer
+                                            (set! layer (syntax-property expr 'layer))))
+                                        (annotate e bound-vars id-layer id))
+                                      exprs-lst))
+                (define port (set-up-output-port))
+                (if layer
+                    (quasisyntax/loc expr
+                      (parameterize ([current-output-port #,port])
+                        (#%plain-app #,add-layer-id '#,layer)
+                        (#%plain-app . #,subexprs)))
+                    (quasisyntax/loc expr
+                      (#%plain-app . #,subexprs)))]))]
           
           [(#%top . var) expr]
           [(#%variable-reference . _) expr]

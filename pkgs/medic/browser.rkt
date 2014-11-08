@@ -4,8 +4,7 @@
          racket/gui/base
          framework
          "graph-pasteboard.rkt"
-         "graph-layout.rkt"
-         "edge.rkt")
+         "visual-util.rkt")
 
 (provide make-trace-browser)
 
@@ -41,8 +40,20 @@
     (define timeline-panel (new vertical-panel% [parent split-panel]))
     (define graph-panel (new vertical-panel% [parent split-panel]))
     
-    (define graph-pb (new graph-pasteboard%))
+    (send split-panel begin-container-sequence)
+    (send split-panel set-percentages (list 1/3 1/3 1/3))
+    (send split-panel end-container-sequence)
     
+    (define graph-pb (new graph-pasteboard%))
+    (define-values (graph-width graph-height) (send graph-panel get-size))
+    (define-values (graph-nodes graph-edges) (get-graph-table))
+    (define graph-model (new graph-layout% 
+                             [width graph-width]
+                             [height graph-height]
+                             [nodes graph-nodes]
+                             [edges graph-edges]))
+    
+ 
     (new editor-canvas% 
          [parent log-panel]
          [style '(auto-hscroll)])
@@ -52,18 +63,12 @@
     (new editor-canvas%
          [parent graph-panel]
          [editor graph-pb])
-    
-    #;(define/public (update-graph-info n e)
-      (set! nodes n)
-      (set! edges e))
       
     
          
          
       
     
-    (send split-panel begin-container-sequence)
-    (send split-panel set-percentages (list 1/3 1/3 1/3))
-    (send split-panel end-container-sequence)
+    
     ))
     

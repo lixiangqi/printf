@@ -7,7 +7,12 @@
 (define nodes (make-hash))
 (define edges (make-hash))
 
-(define (edge from-node to-node 
+(define (edge from-node to-node [edge-label #f] [from-label #f] [to-label #f])
+  (void))
+
+
+
+#;(define (edge from-node to-node 
               #:edge-label [edge-label ""] 
               #:from-label [from-label ""] 
               #:to-label [to-label ""])

@@ -3,8 +3,7 @@
 (require "load-annotator.rkt"
          "medic-annotator.rkt"
          "redirect.rkt"
-         "browser.rkt"
-         "graph-layout.rkt")
+         "browser.rkt")
 
 (provide medic
          debug
@@ -64,8 +63,7 @@
                                   (and medic-at-table (hash-has-key? medic-at-table fn-str)))))])
     (eval/annotations mod annotate-module? annotate-stx medic-insert-table medic-at-table medic-template)
     (process-logs)
-    (make-trace-browser fn)
-    ))
+    (make-trace-browser fn)))
 
 (define (display-logs)
   (for ([l (access-logs)])
