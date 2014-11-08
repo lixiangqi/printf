@@ -1,4 +1,11 @@
 #lang racket
 
-; write log macro
-(: sumOfSquare |sum of [a] squared and [b] squared is [:ret]|)
+(provide logg)
+
+#;(define-syntax (log stx)
+  (syntax-case stx ()
+    [(_ id) #'(printf "log x=~v\n" id)]))
+
+(define (logg x)
+  (void)
+  #;(printf "entered!!!!!\n"))

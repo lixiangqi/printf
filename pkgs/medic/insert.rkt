@@ -100,6 +100,9 @@
                                        #,(rearm
                                           #'mb
                                           #`(plain-module-begin
+                                             
+                                             #,(datum->syntax #f '(#%require medic/log
+                                                                             medic/edge))
                                              #,@entry-exprs
                                              #,@(map (lambda (e) (module-level-expr-iterator e))
                                                      (syntax->list #'module-level-exprs))))))]
@@ -108,6 +111,8 @@
                                        #,(rearm
                                           #'mb
                                           #`(plain-module-begin
+                                             #,(datum->syntax #f '(#%require medic/log
+                                                                             medic/edge))
                                              #,@entry-exprs
                                              #,@(map (lambda (e) (module-level-expr-iterator e))
                                                      (syntax->list #'module-level-exprs))

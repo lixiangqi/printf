@@ -88,6 +88,7 @@
                  'load-module/annotate
                  (format "expected only a `module' declaration for `~s', but found an extra expression" m)
                  second))
+              (printf "annotated...=~v\n" module-ized-exp)
               (eval-syntax module-ized-exp))))))
      
      (lambda () (close-input-port in-port)))))

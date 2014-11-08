@@ -112,7 +112,7 @@
           (let* ([new-bound-vars (arglist-bindings #'arg-list)]
                  [all-bound-vars (append new-bound-vars bound-vars)]
                  [new-bodies (map (lambda (e) (annotate e all-bound-vars id-layer id)) (syntax->list #'bodies))])
-            (when id
+            #;(when id
               (printf "new bode=~v\n" new-bodies)
               (printf "res...=~v\n" (hash-ref template id)))
             (quasisyntax/loc clause
@@ -134,6 +134,7 @@
         (define ret (find-bound-var lst))
         (unless ret
           (set! ret (find-bound-var top-level-ids)))
+        ;(printf "var...=~v, ret=~v\n" var ret)
         ret)
           
       (define annotated
@@ -173,17 +174,7 @@
           
           [(set! var val)
            (quasisyntax/loc expr (set! var #,(annotate #`val bound-vars id-layer id)))]
-          
-          [(quote (op datum)) (equal? 'log (syntax->datum #'op))
-           (if (identifier? (syntax->datum #'datum))
-               expr
-               (begin 
-               (quasisyntax/loc expr 
-                 (begin
-                  #,(annotate #'datum bound-vars id-layer id) 
-                 (printf "log entered. \n")))))
-           ]
-          
+         
           [(quote _) expr]
           
           [(quote-syntax _) expr]
@@ -196,6 +187,7 @@
           [(#%plain-app . exprs)
            (begin
              (define layer #f)
+             ;(printf "app....=~v\n" expr)
              (define subexprs (map (lambda (e) 
                                      (when (equal? (syntax->datum e) 'printf)
                                        (set! layer (syntax-property e 'layer))

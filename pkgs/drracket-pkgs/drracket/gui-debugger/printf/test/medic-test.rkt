@@ -16,3 +16,6 @@
 (medic "debug5.rkt")
 (debug "src5.rkt")
 |#
+
+(medic "debug6.rkt")
+(debug "src6.rkt")

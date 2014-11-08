@@ -1,14 +1,16 @@
 #lang racket
 
-(require mrlib/graph
-         racket/gui
-         "quadtree.rkt")
+(require "quadtree.rkt")
 
-(define graph-pasteboard%
-  (class (graph-pasteboard-mixin pasteboard%)
+(provide graph-layout%)
+
+(define graph-layout%
+  (class object%
     (init-field [width 960.0]
-                [height 800.0])
-    (inherit get-snip-location)
+                [height 800.0]
+                [nodes #f]
+                [edges #f])
+    ;(inherit get-snip-location)
     (field [friction 0.9]
            [charge -400.0]
            [gravity 0.1]
@@ -18,7 +20,7 @@
            [charge-distance2 +inf.0]
            [alpha 0.1]
            [neighbors (make-hasheq)]
-           [points (make-hasheq)]
+           ;[points (make-hasheq)]
            [lines (make-hasheq)]
            [node-labels (make-hasheq)]
            [edge-labels (make-hasheq)]
@@ -26,56 +28,7 @@
            [point-width 24.0]
            [point-height 24.0])
     (super-new)
-    
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Layout function;;;;;;;;;;;;;;;
-    
-    (define edges (make-hasheq))
-    (define nodes (make-hasheq))
-    
-    (define node%
-      (class object%
-        (init-field [graph #f])
-        (field [x +nan.0]
-               [y +nan.0]
-               [px +nan.0]
-               [py +nan.0]
-               [weight 0.0]
-               [fixed #f])
-        
-        (define/public (get-x) x)
-        (define/public (set-x new-x) (set! x new-x))
-        
-        (define/public (get-y) y)
-        (define/public (set-y new-y) (set! y new-y))
-        
-        (define/public (get-px) px)
-        (define/public (set-px new-px) (set! px new-px))
-        
-        (define/public (get-py) py)
-        (define/public (set-py new-py) (set! py new-py))
-        
-        (define/public (fixed?) fixed)
-        
-        (define/public (get-weight) weight)
-        
-        (when graph
-          (send graph install-node this))))
-    
-    (define edge%
-      (class object%
-        (field [from #f]
-               [to #f]
-               [label ""])
-        
-        (define/public (get-from-node) from)
-        (define/public (set-from-node f) (set! from f))
-        
-        (define/public (get-to-node) to)
-        (define/public (set-to-node t) (set! to t))
-         
-        
-        ))
-    
+   
     (define/private (install-node n)
       (void))
     
@@ -123,7 +76,6 @@
                    (send from set-y (+ from-y (* y k))))))
              (hash-values edges))
             (set! k (* alpha gravity))
-            
             (unless (zero? k)
               (set! x (/ width 2.0))
               (set! y (/ height 2.0))
@@ -212,17 +164,5 @@
           (set! cy (+ cy (* k (send graph-node get-y))))))
       (send quad set-cx (/ cx (send quad get-charge)))
       (send quad set-cy (/ cy (send quad get-charge))))
-        
-                 
-        
-      
-          
-        
-                       
-
-
-    
-    
-    
     
     ))

@@ -1,13 +1,39 @@
 #lang racket
 
-(require framework
-         racket/gui/base)
+(require racket/class
+         racket/gui/base
+         framework
+         "graph-pasteboard.rkt"
+         "graph-layout.rkt"
+         "edge.rkt")
 
-(provide widget%)
+(provide make-trace-browser)
+
+  
+(define (make-trace-browser fn)
+  (define frame (new trace-frame% [filename fn]))
+  (send frame show #t))
+
+(define trace-frame%
+  (class (frame:basic-mixin frame%)
+    (init-field (filename #f))
+    (inherit get-area-container)
+    (super-new (label (make-label))
+               (width 800)
+               (height 600))
+    (define widget (new widget% [parent (get-area-container)]))
+    
+    (define/private (make-label)
+      (if filename
+          (string-append filename " - Traces")
+          "Traces"))))
 
 (define widget%
   (class object%
     (init parent)
+    (field [nodes #f]
+           [edges #f])
+           
     (super-new)
     
     (define split-panel (new panel:vertical-dragable% [parent parent]))
@@ -15,15 +41,22 @@
     (define timeline-panel (new vertical-panel% [parent split-panel]))
     (define graph-panel (new vertical-panel% [parent split-panel]))
     
+    (define graph-pb (new graph-pasteboard%))
+    
     (new editor-canvas% 
          [parent log-panel]
          [style '(auto-hscroll)])
     (new canvas%
          [parent timeline-panel]
          [style '(hscroll)])
-    (new canvas%
+    (new editor-canvas%
          [parent graph-panel]
-         [style '(hscroll)])
+         [editor graph-pb])
+    
+    #;(define/public (update-graph-info n e)
+      (set! nodes n)
+      (set! edges e))
+      
     
          
          
