@@ -4,7 +4,8 @@
            (for-syntax scheme/base)
            (only-in mzscheme [apply plain-apply])
            "redirect.rkt"
-           "visual-util.rkt")
+           "visual-util.rkt"
+           "visual-lib.rkt")
   (provide annotate-stx)
   
   (define (arglist-bindings arglist-stx)
@@ -123,14 +124,14 @@
       
       (define (edge-expression-annotator e)
         (syntax-case e ()
-          [(_ from-node to-node)
-           #`(#%plain-app #,add-edge from-node to-node #f (format "~a" from-node) (format "~a" to-node))]
-          [(_ from-node to-node edge-label)
-           #`(#%plain-app #,add-edge from-node to-node edge-label (format "~a" from-node) (format "~a" to-node))]
-          [(_ from-node to-node edge-label from-label)
-           #`(#%plain-app #,add-edge from-node to-node edge-label from-label (format "~a" to-node))]
-          [(_ from-node to-node edge-label from-label to-label)
-           #`(#%plain-app #,add-edge from-node to-node edge-label from-label to-label)]))
+          [(from to)
+           #`(#%plain-app #,add-edge from to #f (format "~a" from) (format "~a" to))]
+          [(from to edge-label)
+           #`(#%plain-app #,add-edge from to edge-label (format "~a" from) (format "~a" to))]
+          [(from to edge-label from-label)
+           #`(#%plain-app #,add-edge from to edge-label from-label (format "~a" to))]
+          [(from to edge-label from-label to-label)
+           #`(#%plain-app #,add-edge from to edge-label from-label to-label)]))
         
       
       (define (find-bound-var/wrap-context var lst)
@@ -147,7 +148,6 @@
         (define ret (find-bound-var lst))
         (unless ret
           (set! ret (find-bound-var top-level-ids)))
-        ;(printf "var...=~v, ret=~v\n" var ret)
         ret)
           
       (define annotated
@@ -197,9 +197,8 @@
                                    #,(annotate #'mark bound-vars id-layer id)
                                    #,(annotate #'body bound-vars id-layer id)))]
           
-          [(#%plain-app edge from-node to-node . labels)
-           (begin (printf "edge case entered...\n")
-           expr)]
+          [(#%plain-app edge . args)
+           (edge-expression-annotator #'args)]
                         
           [(#%plain-app . exprs)
            (begin
