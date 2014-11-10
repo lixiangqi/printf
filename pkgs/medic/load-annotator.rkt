@@ -50,6 +50,8 @@
       (values p filename new-at-table))))
 
 (define (eval/annotations initial-module annotate-module? annotator insert-tables at-tables templates)
+  (define ns (make-base-namespace))
+  (namespace-attach-module (current-namespace) 'racket/class ns)
   (parameterize
       ([current-load/use-compiled
         (let ([ocload/use-compiled (current-load/use-compiled)])
@@ -62,7 +64,7 @@
                      (load-module/annotate annotator fn m insert-table at-table template))]
                   [else
                    (ocload/use-compiled fn m)])))]
-       [current-namespace (make-base-namespace)])
+       [current-namespace ns])
     (eval #`(require #,initial-module))))
 
 ; fn: complete-path-string
