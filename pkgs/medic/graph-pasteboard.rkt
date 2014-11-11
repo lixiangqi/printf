@@ -5,34 +5,31 @@
          "quadtree.rkt"
          "visual-util.rkt")
 
-(provide graph-pasteboard%
-         graph-image-snip%)
+(provide graph-pasteboard%)
 
-(define snip-size 30)
+(define image-size 20)
+(define radius (/ image-size 2))
 
 (define (create-node-bitmap)
-  (define bm (make-object bitmap% snip-size snip-size))
+  (define bm (make-object bitmap% image-size image-size))
   (define bm-dc (new bitmap-dc% [bitmap bm]))
-  (send bm-dc set-brush "blue" 'solid)
-  (send bm-dc draw-ellipse 0 0 snip-size snip-size)
+  (send bm-dc set-brush "DodgerBlue" 'solid)
+  (send bm-dc set-pen "RoyalBlue" 0 'solid)
+  (send bm-dc draw-ellipse 0 0 image-size image-size)
   bm)
 
-(define graph-image-snip%
-  (class (graph-snip-mixin image-snip%)
-    (field [label #f])
+(define graph-editor-snip%
+  (class (graph-snip-mixin editor-snip%)
+    (field [label-width #f])
     (super-new)
-    
-    (define/public (set-label l) (set! label l))
-    
-    (define/override (draw dc x y left top right bottom dx dy draw-caret)
-      (send dc draw-text label (+ x snip-size) (+ y snip-size))
-      (super draw dc x y left top right bottom dx dy draw-caret))))
-
+    (define/public (get-label-width) label-width)
+    (define/public (set-label-width w) (set! label-width w))))
 
 (define graph-pasteboard%
   (class (graph-pasteboard-mixin pasteboard%)
     (init-field [width #f]
                 [height #f])
+    (inherit insert)
     
     (define friction 0.9)
     (define charge -400.0)
@@ -45,16 +42,10 @@
     (define neighbors (make-hash))
     
     (define snips (make-hash))
-    
-    (define lines (make-hasheq))
-    (define node-labels (make-hash))
-    (define edge-labels (make-hash))
-    (define isDraging (make-hash))
-    (define point-width 24.0)
-    (define point-height 24.0)
-    
     (define nodes (make-hash))
     (define edges (make-hash))
+    
+    (define/augment (can-interactive-resize? evt) #f)
     
     (define/private (init-graph-elements)
       (define raw-edges (get-raw-edges))
@@ -75,7 +66,6 @@
                (unless (hash-has-key? edges k) 
                  (hash-set! edges k (new edge% [from from-node] [to to-node] [label edge-label])))))))
          (hash-keys raw-edges)))
-      
    
     (define node%
       (class object%
@@ -123,14 +113,26 @@
     
         (define/public (get-label) label)))
     
+    (define/private (get-text-width str)
+      (define dc (new bitmap-dc% [bitmap (make-object bitmap% 1 1)]))
+      (define-values (w h r1 r2) (send dc get-text-extent str))
+      w)
+    
     (define/private (install-node n)
       (when (nan? (send n get-x)) (send n set-x (position n 0)))
       (when (nan? (send n get-y)) (send n set-y (position n 1)))
       (when (nan? (send n get-px)) (send n set-px (send n get-x)))
       (when (nan? (send n get-py)) (send n set-py (send n get-y)))
-      (define s (make-object graph-image-snip% (create-node-bitmap)))
-      (send s set-label (send n get-label))
-      (hash-set! snips n s))
+      (let* ([text (new text%)]
+             [s (new graph-editor-snip% [editor text])]
+             [image-snip (make-object image-snip% (create-node-bitmap))]
+             [label (send n get-label)]
+             [width (get-text-width label)])
+        (send text insert image-snip)
+        (send text insert label)
+        (send s show-border #f)
+        (send s set-label-width width)
+        (hash-set! snips n s)))
     
     (define/private (install-edge e)
       (define from (send e get-from-node))
@@ -144,24 +146,38 @@
           (hash-set! neighbors to (append (hash-ref neighbors to) (list from)))
           (hash-set! neighbors to (list from))))
     
-    (define/private (uninstall-node n)
-      (void))
-    
-    (define/private (uninstall-edge e)
-      (void))
-    
-    (define/public (update-nodes)
-      (tick)
+    (define/public (layout-nodes)
+      (let loop ([t (tick)])
+        (when t
+          (loop (tick))))
       (for-each
        (lambda (n)
-         (printf "node x=~v, y=~v\n" (send n get-x) (send n get-y)))
-       (hash-values nodes))
-      (void))
+         (define snip (hash-ref snips n))
+         (define lw (send snip get-label-width))
+         (insert (hash-ref snips n) (- (send n get-x) (/ (+ image-size lw) 2)) (- (send n get-y) radius)))
+       (hash-values nodes)))
     
-    (define/public (update-edges)
-      (void))
-    
-    (define/public (resume) (set! alpha 0.1))
+    (define/public (layout-edges)
+      (define dark-color "DarkGray")
+      (define light-color "Gray")
+      (define dark-pen (send the-pen-list find-or-create-pen dark-color 0 'solid))
+      (define light-pen (send the-pen-list find-or-create-pen light-color 0 'solid))
+      (define dark-brush (send the-brush-list find-or-create-brush dark-color 'solid))
+      (define light-brush (send the-brush-list find-or-create-brush light-color 'solid))
+      (define dark-c (make-object color% dark-color))
+      (define light-c (make-object color% light-color))
+      (for-each
+       (lambda (e)
+         (let ([from-node (send e get-from-node)]
+               [to-node (send e get-to-node)])
+           (add-links/text-colors (hash-ref snips from-node)
+                                  (hash-ref snips to-node)
+                                  dark-pen light-pen
+                                  dark-brush light-brush
+                                  dark-c light-c
+                                  0 0
+                                  (send e get-label))))
+       (hash-values edges)))
     
     (define/public (tick)
       (set! alpha (* alpha 0.99))
@@ -247,7 +263,6 @@
              (when (and (not ret) (= d 1) (not (nan? n-y))) (set! ret n-y))))
          (hash-ref neighbors n)))
       (or ret (* (random) (if (zero? d) width height)))) 
-      
     
     (define/public (repulse node)
       (lambda (quad x1 y1 x2 y2)
@@ -302,5 +317,5 @@
     
     (super-new)
     (init-graph-elements)
-    (update-nodes)
-    ))
+    (layout-nodes)
+    (layout-edges)))

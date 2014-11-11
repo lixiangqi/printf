@@ -125,11 +125,11 @@
       (define (edge-expression-annotator e)
         (syntax-case e ()
           [(from to)
-           #`(#%plain-app #,add-edge from to #f (format "~a" from) (format "~a" to))]
+           #`(#%plain-app #,add-edge from to #f (format "~v" from) (format "~v" to))]
           [(from to edge-label)
-           #`(#%plain-app #,add-edge from to edge-label (format "~a" from) (format "~a" to))]
+           #`(#%plain-app #,add-edge from to edge-label (format "~v" from) (format "~v" to))]
           [(from to edge-label from-label)
-           #`(#%plain-app #,add-edge from to edge-label from-label (format "~a" to))]
+           #`(#%plain-app #,add-edge from to edge-label from-label (format "~v" to))]
           [(from to edge-label from-label to-label)
            #`(#%plain-app #,add-edge from to edge-label from-label to-label)]))
         

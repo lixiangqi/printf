@@ -10,15 +10,15 @@
   
 (define (make-trace-browser fn)
   (define frame (new trace-frame% [filename fn]))
-  (send frame show #f))
+  (send frame show #t))
 
 (define trace-frame%
   (class (frame:basic-mixin frame%)
     (init-field (filename #f))
     (inherit get-area-container)
     (super-new (label (make-label))
-               (width 800)
-               (height 600))
+               (width 1200)
+               (height 800))
     (define widget (new widget% [parent (get-area-container)]))
     
     (define/private (make-label)
@@ -33,13 +33,22 @@
     (super-new)
     
     (define split-panel (new panel:vertical-dragable% [parent parent]))
-    (define log-panel (new vertical-panel% [parent split-panel]))
+    (define top-panel (new vertical-panel% [parent split-panel]))
     (define timeline-panel (new vertical-panel% [parent split-panel]))
-    (define graph-panel (new vertical-panel% [parent split-panel]))
+    
+    
+    (define sub-split-panel (new panel:horizontal-dragable% [parent top-panel]))
+    
+    (define log-panel (new vertical-panel% [parent sub-split-panel]))
+    (define graph-panel (new vertical-panel% [parent sub-split-panel]))
     
     (send split-panel begin-container-sequence)
-    (send split-panel set-percentages (list 1/3 1/3 1/3))
+    (send split-panel set-percentages (list 1/2 1/2))
     (send split-panel end-container-sequence)
+    
+    (send sub-split-panel begin-container-sequence)
+    (send sub-split-panel set-percentages (list 1/2 1/2))
+    (send sub-split-panel end-container-sequence)
     
     (define-values (graph-width graph-height) (send graph-panel get-size))
     (define graph-pb (new graph-pasteboard%
