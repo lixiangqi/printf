@@ -3,15 +3,14 @@
 (require racket/class
          racket/gui/base
          framework
-         "graph-pasteboard.rkt"
-         "visual-util.rkt")
+         "graph-pasteboard.rkt")
 
 (provide make-trace-browser)
 
   
 (define (make-trace-browser fn)
   (define frame (new trace-frame% [filename fn]))
-  (send frame show #t))
+  (send frame show #f))
 
 (define trace-frame%
   (class (frame:basic-mixin frame%)
@@ -30,8 +29,6 @@
 (define widget%
   (class object%
     (init parent)
-    (field [nodes #f]
-           [edges #f])
            
     (super-new)
     
@@ -44,15 +41,10 @@
     (send split-panel set-percentages (list 1/3 1/3 1/3))
     (send split-panel end-container-sequence)
     
-    (define graph-pb (new graph-pasteboard%))
     (define-values (graph-width graph-height) (send graph-panel get-size))
-    (define-values (graph-nodes graph-edges) (get-graph-table))
-    (define graph-model (new graph-layout% 
-                             [width graph-width]
-                             [height graph-height]
-                             [nodes graph-nodes]
-                             [edges graph-edges]))
-    
+    (define graph-pb (new graph-pasteboard%
+                          [width graph-width]
+                          [height graph-height]))
  
     (new editor-canvas% 
          [parent log-panel]

@@ -25,7 +25,10 @@
     (define/public (set-y new-y) (set! y new-y))
     
     (define/public (get-cx) cx)
+    (define/public (set-cx x) (set! cx x))
+    
     (define/public (get-cy) cy)
+    (define/public (set-cy y) (set! cy y))
     
     (define/public (get-point) point)
     (define/public (set-point p) (set! point p))
@@ -45,8 +48,8 @@
     (init-field [data null])
     (field [x1 +inf.0]
            [y1 +inf.0]
-           [x2 +inf.0]
-           [y2 +inf.0]
+           [x2 -inf.0]
+           [y2 -inf.0]
            [xs null]
            [ys null]
            [root (new quadtree-node%)])
