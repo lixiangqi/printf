@@ -11,10 +11,10 @@
 (define radius (/ image-size 2))
 
 (define (create-node-bitmap)
-  (define bm (make-object bitmap% image-size image-size))
+  (define bm (make-object bitmap% image-size image-size #f #t))
   (define bm-dc (new bitmap-dc% [bitmap bm]))
   (send bm-dc set-brush "DodgerBlue" 'solid)
-  (send bm-dc set-pen "RoyalBlue" 0 'solid)
+  (send bm-dc set-pen "Light Gray" 0 'solid)
   (send bm-dc draw-ellipse 0 0 image-size image-size)
   bm)
 
@@ -22,6 +22,7 @@
   (class (graph-snip-mixin editor-snip%)
     (field [label-width #f])
     (super-new)
+    (define/override (can-do-edit-operation? o) #f)
     (define/public (get-label-width) label-width)
     (define/public (set-label-width w) (set! label-width w))))
 
@@ -127,10 +128,14 @@
              [s (new graph-editor-snip% [editor text])]
              [image-snip (make-object image-snip% (create-node-bitmap))]
              [label (send n get-label)]
-             [width (get-text-width label)])
+             [width (get-text-width label)]
+             [empty-str (make-string (+ 5 (string-length label)))])
+        (send text insert empty-str)
         (send text insert image-snip)
         (send text insert label)
+        (send text lock #t)
         (send s show-border #f)
+        (send s use-style-background #t)
         (send s set-label-width width)
         (hash-set! snips n s)))
     
@@ -154,7 +159,7 @@
        (lambda (n)
          (define snip (hash-ref snips n))
          (define lw (send snip get-label-width))
-         (insert (hash-ref snips n) (- (send n get-x) (/ (+ image-size lw) 2)) (- (send n get-y) radius)))
+         (insert (hash-ref snips n) (- (send n get-x) (/ (+ lw image-size) 2)) (- (send n get-y) radius)))
        (hash-values nodes)))
     
     (define/public (layout-edges)
@@ -316,6 +321,7 @@
       (send quad set-cy (/ cy (send quad get-charge))))
     
     (super-new)
+    (send this set-selection-visible #f)
     (init-graph-elements)
     (layout-nodes)
     (layout-edges)))
