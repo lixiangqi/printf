@@ -29,7 +29,9 @@
   (class (graph-pasteboard-mixin pasteboard%)
     (init-field [width #f]
                 [height #f])
-    (inherit insert)
+    (inherit insert
+             begin-edit-sequence
+             end-edit-sequence)
     
     (define friction 0.9)
     (define charge -400.0)
@@ -129,9 +131,11 @@
              [label (send n get-label)]
              [width (get-text-width label)]
              [empty-str (make-string (+ 5 (string-length label)))])
+        (send text begin-edit-sequence)
         (send text insert empty-str)
         (send text insert image-snip)
         (send text insert label)
+        (send text end-edit-sequence)
         (send text lock #t)
         (send s show-border #f)
         (send s use-style-background #t)
@@ -154,12 +158,14 @@
       (let loop ([t (tick)])
         (when t
           (loop (tick))))
+      (begin-edit-sequence)
       (for-each
        (lambda (n)
          (define snip (hash-ref snips n))
          (define lw (send snip get-label-width))
          (insert (hash-ref snips n) (- (send n get-x) (/ (+ lw image-size) 2)) (- (send n get-y) radius)))
-       (hash-values nodes)))
+       (hash-values nodes))
+      (end-edit-sequence))
     
     (define/public (layout-edges)
       (define dark-color "DarkGray")
