@@ -7,15 +7,16 @@
 
 (provide graph-pasteboard%)
 
-(define image-size 20)
-(define radius (/ image-size 2))
+(define node-size 20)
+(define radius (/ node-size 2))
 
-(define (create-node-bitmap)
-  (define bm (make-object bitmap% image-size image-size #f #t))
+(define (create-node-bitmap label w)
+  (define bm (make-object bitmap% (inexact->exact (ceiling (+ w w node-size))) node-size #f #t))
   (define bm-dc (new bitmap-dc% [bitmap bm]))
   (send bm-dc set-brush "DodgerBlue" 'solid)
   (send bm-dc set-pen "Light Gray" 0 'solid)
-  (send bm-dc draw-ellipse 0 0 image-size image-size)
+  (send bm-dc draw-ellipse w 0 node-size node-size)
+  (send bm-dc draw-text label (+ w node-size) 0)
   bm)
 
 (define graph-editor-snip%
@@ -31,7 +32,8 @@
                 [height #f])
     (inherit insert
              begin-edit-sequence
-             end-edit-sequence)
+             end-edit-sequence
+             set-selection-visible)
     
     (define friction 0.9)
     (define charge -400.0)
@@ -127,14 +129,11 @@
       (when (nan? (send n get-py)) (send n set-py (send n get-y)))
       (let* ([text (new text%)]
              [s (new graph-editor-snip% [editor text])]
-             [image-snip (make-object image-snip% (create-node-bitmap))]
              [label (send n get-label)]
              [width (get-text-width label)]
-             [empty-str (make-string (+ 5 (string-length label)))])
+             [image-snip (make-object image-snip% (create-node-bitmap label width))])
         (send text begin-edit-sequence)
-        (send text insert empty-str)
         (send text insert image-snip)
-        (send text insert label)
         (send text end-edit-sequence)
         (send text lock #t)
         (send s show-border #f)
@@ -163,7 +162,7 @@
        (lambda (n)
          (define snip (hash-ref snips n))
          (define lw (send snip get-label-width))
-         (insert (hash-ref snips n) (- (send n get-x) (/ (+ lw image-size) 2)) (- (send n get-y) radius)))
+         (insert (hash-ref snips n) (- (send n get-x) (/ (+ lw node-size) 2)) (- (send n get-y) radius)))
        (hash-values nodes))
       (end-edit-sequence))
     
@@ -326,7 +325,7 @@
       (send quad set-cy (/ cy (send quad get-charge))))
     
     (super-new)
-    (send this set-selection-visible #f)
+    (set-selection-visible #f)
     (init-graph-elements)
     (layout-nodes)
     (layout-edges)))
