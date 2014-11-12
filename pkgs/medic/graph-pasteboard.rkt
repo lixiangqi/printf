@@ -22,7 +22,6 @@
   (class (graph-snip-mixin editor-snip%)
     (field [label-width #f])
     (super-new)
-    (define/override (can-do-edit-operation? o) #f)
     (define/public (get-label-width) label-width)
     (define/public (set-label-width w) (set! label-width w))))
 
