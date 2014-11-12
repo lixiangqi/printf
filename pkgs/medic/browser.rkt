@@ -3,7 +3,8 @@
 (require racket/class
          racket/gui/base
          framework
-         "graph-pasteboard.rkt")
+         "graph-pasteboard.rkt"
+         "timeline-canvas.rkt")
 
 (provide make-trace-browser)
 
@@ -36,9 +37,7 @@
     (define top-panel (new vertical-panel% [parent split-panel]))
     (define timeline-panel (new vertical-panel% [parent split-panel]))
     
-    
     (define sub-split-panel (new panel:horizontal-dragable% [parent top-panel]))
-    
     (define log-panel (new vertical-panel% [parent sub-split-panel]))
     (define graph-panel (new vertical-panel% [parent sub-split-panel]))
     
@@ -49,6 +48,7 @@
     (send sub-split-panel begin-container-sequence)
     (send sub-split-panel set-percentages (list 1/2 1/2))
     (send sub-split-panel end-container-sequence)
+    (new slider% [label "timeline"] [min-value 0] [max-value 10] [parent timeline-panel])
     
     (define-values (graph-width graph-height) (send graph-panel get-size))
     (define graph-pb (new graph-pasteboard%
@@ -58,9 +58,10 @@
     (new editor-canvas% 
          [parent log-panel]
          [style '(auto-hscroll)])
-    (new canvas%
-         [parent timeline-panel]
-         [style '(hscroll)])
+    (define timeline-canvas (new timeline-canvas%
+                                 [parent timeline-panel]
+                                 [style '(hscroll vscroll)]))
+    (send timeline-canvas init-auto-scrollbars 100 #f 0.0 0.0)
     (new editor-canvas%
          [parent graph-panel]
          [editor graph-pb])
