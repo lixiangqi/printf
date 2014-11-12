@@ -48,12 +48,13 @@
     (send sub-split-panel begin-container-sequence)
     (send sub-split-panel set-percentages (list 1/2 1/2))
     (send sub-split-panel end-container-sequence)
-    (new slider% [label "timeline"] [min-value 0] [max-value 10] [parent timeline-panel])
+    (new slider% [label "Timeline"] [min-value 0] [max-value 10] [parent timeline-panel])
     
     (define-values (graph-width graph-height) (send graph-panel get-size))
-    (define graph-pb (new graph-pasteboard%
+    #;(define graph-pb (new graph-pasteboard%
                           [width graph-width]
                           [height graph-height]))
+    (define graph-pb (new text%))
  
     (new editor-canvas% 
          [parent log-panel]
@@ -61,7 +62,8 @@
     (define timeline-canvas (new timeline-canvas%
                                  [parent timeline-panel]
                                  [style '(hscroll vscroll)]))
-    (send timeline-canvas init-auto-scrollbars 100 #f 0.0 0.0)
+    (send timeline-canvas init-auto-scrollbars 4000 300 0.0 0.0)
+    (send timeline-canvas show-scrollbars #t #t)
     (new editor-canvas%
          [parent graph-panel]
          [editor graph-pb])
