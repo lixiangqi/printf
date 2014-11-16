@@ -16,6 +16,7 @@
 
 (define (interp stx)
   
+  (define counter 0)
   (define current-layer-id #f)
   (define exports '())
   (define imports '())
@@ -258,7 +259,7 @@
          (add-at-insert at-struct))]))
   
   (define (interpret-src-expr stx)
-    (syntax-case stx (ref)
+    (syntax-case stx (ref timeline assert)
       [(ref src-id)
        (let* ([id (syntax->datum #'src-id)]
               [exprs (hash-ref src-table id #f)])
@@ -273,6 +274,18 @@
                   (let ([found-expr (hash-ref (env-src-table (hash-ref global-env (car (first lst)))) id)])
                     (map interpret-src-expr found-expr))
                   (iterate (rest lst))))]))]
+      
+      [(timeline id)
+       (begin
+         (set! counter (add1 counter))
+         (syntax-property (syntax-property stx 'layer current-layer-id)
+                          'timeline-id counter))]
+      
+      [(assert cond)
+       (begin
+         (set! counter (add1 counter))
+         (syntax-property (syntax-property stx 'layer current-layer-id)
+                          'timeline-id counter))]
       
       [else (syntax-property stx 'layer current-layer-id)]))
   

@@ -182,13 +182,16 @@
                   [plain-lst (syntax->list body)]
                   [ret '()])
               (for ([j (in-range (length enriched-lst))])
-                (let* ([layer-prop (syntax-property (list-ref enriched-lst j) 'layer)]
+                (let* ([e (list-ref enriched-lst j)]
+                       [layer-prop (syntax-property e 'layer)]
                        [ele (list-ref plain-lst j)]
                        [attached 
                         (if (and layer-prop (syntax->list ele))
                             (map (lambda (i)
                                    (if (identifier? i)
-                                       (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
+                                       (syntax-property (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
+                                                        'timeline-id
+                                                        (syntax-property e 'timeline-id))
                                        i))
                                  (syntax->list ele))
                             ele)])
@@ -244,7 +247,9 @@
                      (if (syntax->list body)
                          (map (lambda (i) 
                                 (if (identifier? i)
-                                    (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
+                                    (syntax-property (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
+                                                     'timeline-id
+                                                     (syntax-property exp 'timeline-id))
                                     i)) 
                               (syntax->list body))
                          body))

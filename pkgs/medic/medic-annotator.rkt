@@ -125,14 +125,17 @@
       (define (edge-expression-annotator e)
         (syntax-case e ()
           [(from to)
-           #`(#%plain-app #,add-edge from to #f (format "~v" from) (format "~v" to))]
+           (quasisyntax/loc e
+             (#%plain-app #,add-edge from to #f (format "~v" from) (format "~v" to)))]
           [(from to edge-label)
-           #`(#%plain-app #,add-edge from to edge-label (format "~v" from) (format "~v" to))]
+           (quasisyntax/loc e
+             (#%plain-app #,add-edge from to edge-label (format "~v" from) (format "~v" to)))]
           [(from to edge-label from-label)
-           #`(#%plain-app #,add-edge from to edge-label from-label (format "~v" to))]
+           (quasisyntax/loc e
+             (#%plain-app #,add-edge from to edge-label from-label (format "~v" to)))]
           [(from to edge-label from-label to-label)
-           #`(#%plain-app #,add-edge from to edge-label from-label to-label)]))
-        
+           (quasisyntax/loc e
+             (#%plain-app #,add-edge from to edge-label from-label to-label))]))
       
       (define (find-bound-var/wrap-context var lst)
         (define (find-bound-var var-lst)
@@ -154,7 +157,7 @@
         (rearm
          expr
          (kernel:kernel-syntax-case*
-          (disarm expr) #f (edge)
+          (disarm expr) #f (edge timeline assert)
           [var-stx (identifier? (syntax var-stx))
                    (if (syntax-property #'var-stx 'medic)
                        (or (find-bound-var/wrap-context #'var-stx bound-vars) expr)
@@ -199,6 +202,27 @@
           
           [(#%plain-app edge . args)
            (edge-expression-annotator #'args)]
+          
+          [(#%plain-app timeline id) 
+           (let ([timeline-id (or (syntax-property expr 'timeline-id)
+                                  (syntax-property (cadr (syntax->list expr)) 'timeline-id))])
+             (printf "timeline-id=~v\n" timeline-id)
+           expr)
+;           (quasisyntax/loc expr
+;             (#%plain-app #,record-timeline-data 
+;             
+;           (timeline-annotator #'id #f)
+           
+           ]
+          
+          [(#%plain-app assert cond)
+           (let ([timeline-id (or (syntax-property expr 'timeline-id)
+                                  (syntax-property (cadr (syntax->list expr)) 'timeline-id))])
+             (printf "assert-id=~v\n" timeline-id)
+           expr)
+           
+;           (timeline-annotator #'cond #t)
+           ]
                         
           [(#%plain-app . exprs)
            (begin
