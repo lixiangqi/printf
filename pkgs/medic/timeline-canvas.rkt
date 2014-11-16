@@ -10,8 +10,10 @@
     (inherit get-dc)
     (super-new)
     
-    (define labels (map car data))
-    (define values (map cdr data))
+    (printf "data=~v\n" data)
+    (define labels (map first data))
+    (define asserts (map second data))
+    (define values (map third data))
     (define dc (get-dc))
     
     (define (convert-to-type l)

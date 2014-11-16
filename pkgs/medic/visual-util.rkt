@@ -3,7 +3,7 @@
 (provide add-edge
          get-raw-edges
          record-timeline
-         get-timeline-table)
+         get-timeline-data)
 
 (define snip-size 30)
 (define raw-edges (make-hash))
@@ -25,7 +25,7 @@
      (set! sequence (append sequence (list key)))
      (hash-set! timeline-table key (list (list label value assert?)))]))
 
-(define (get-timeline-table)
+(define (get-timeline-data)
   (define temp null)
   (for-each
    (lambda (n)
