@@ -2,8 +2,7 @@
 
 (require mrlib/graph
          racket/gui/base
-         "quadtree.rkt"
-         "visual-util.rkt")
+         "quadtree.rkt")
 
 (provide graph-pasteboard%)
 
@@ -28,7 +27,8 @@
 
 (define graph-pasteboard%
   (class (graph-pasteboard-mixin pasteboard%)
-    (init-field [width #f]
+    (init-field [raw-edges #f] 
+                [width #f]
                 [height #f])
     (inherit insert
              begin-edit-sequence
@@ -52,7 +52,6 @@
     (define/augment (can-interactive-resize? evt) #f)
     
     (define/private (init-graph-elements)
-      (define raw-edges (get-raw-edges))
       (for-each
        (lambda (key)
          (let* ([from (car key)]

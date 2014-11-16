@@ -275,7 +275,7 @@
                     (map interpret-src-expr found-expr))
                   (iterate (rest lst))))]))]
       
-      [(timeline id)
+      [(timeline id) (identifier? #'id)
        (begin
          (set! counter (add1 counter))
          (syntax-property (syntax-property stx 'layer current-layer-id)
@@ -285,7 +285,7 @@
        (begin
          (set! counter (add1 counter))
          (syntax-property (syntax-property stx 'layer current-layer-id)
-                          'timeline-id counter))]
+                          'timeline-id (cons counter (format "~a" (syntax->datum #'cond)))))]
       
       [else (syntax-property stx 'layer current-layer-id)]))
   

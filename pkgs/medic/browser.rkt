@@ -4,7 +4,8 @@
          racket/gui/base
          framework
          "graph-pasteboard.rkt"
-         "timeline-canvas.rkt")
+         "timeline-canvas.rkt"
+         "visual-util.rkt")
 
 (provide make-trace-browser)
 
@@ -52,6 +53,7 @@
     
     (define-values (graph-width graph-height) (send graph-panel get-size))
     #;(define graph-pb (new graph-pasteboard%
+                          [raw-edges (get-raw-edges)]
                           [width graph-width]
                           [height graph-height]))
     (define graph-pb (new text%))
@@ -67,6 +69,8 @@
                        (cons "x > 5" (list #f #t #f #t #t))
                        (cons "str" (list "hello" "world" 1 #t "time line" "core" "canvas"))))
     
+    (get-timeline-table)
+    ;(printf "timeline-table = ~v\n" (get-timeline-table))
     (define timeline-canvas (new timeline-canvas%
                                  [data data]
                                  [parent timeline-panel]

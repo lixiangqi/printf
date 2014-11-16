@@ -203,26 +203,20 @@
           [(#%plain-app edge . args)
            (edge-expression-annotator #'args)]
           
-          [(#%plain-app timeline id) 
+          [(#%plain-app timeline id) (identifier? (syntax id))
            (let ([timeline-id (or (syntax-property expr 'timeline-id)
-                                  (syntax-property (cadr (syntax->list expr)) 'timeline-id))])
-             (printf "timeline-id=~v\n" timeline-id)
-           expr)
-;           (quasisyntax/loc expr
-;             (#%plain-app #,record-timeline-data 
-;             
-;           (timeline-annotator #'id #f)
-           
-           ]
+                                  (syntax-property (cadr (syntax->list expr)) 'timeline-id))]
+                 [label (format "~a" (syntax-e #'id))])
+             (quasisyntax/loc expr
+               (#%plain-app #,record-timeline #,timeline-id #,label id #f)))]
           
           [(#%plain-app assert cond)
-           (let ([timeline-id (or (syntax-property expr 'timeline-id)
-                                  (syntax-property (cadr (syntax->list expr)) 'timeline-id))])
-             (printf "assert-id=~v\n" timeline-id)
-           expr)
-           
-;           (timeline-annotator #'cond #t)
-           ]
+           (let* ([timeline-id (or (syntax-property expr 'timeline-id)
+                                  (syntax-property (cadr (syntax->list expr)) 'timeline-id))]
+                  [id (car timeline-id)]
+                  [label (cdr timeline-id)])
+             (quasisyntax/loc expr
+               (#%plain-app #,record-timeline #,id #,label cond #t)))]
                         
           [(#%plain-app . exprs)
            (begin
