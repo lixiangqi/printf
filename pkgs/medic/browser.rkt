@@ -59,7 +59,16 @@
     (new editor-canvas% 
          [parent log-panel]
          [style '(auto-hscroll)])
+    #;(define data (list (cons "x" (list 3 7 5 9 10))
+                       (cons "x > 5" (list #f #t #f #t #t))
+                       (cons "str" (list "hello" "world" 1 #t "time line" "core" "canvas"))))
+    
+    (define data (list (cons "x" (list #f #f #f #f #t))
+                       (cons "x > 5" (list #f #t #f #t #t))
+                       (cons "str" (list "hello" "world" 1 #t "time line" "core" "canvas"))))
+    
     (define timeline-canvas (new timeline-canvas%
+                                 [data data]
                                  [parent timeline-panel]
                                  [style '(hscroll vscroll)]))
     (send timeline-canvas init-auto-scrollbars 4000 300 0.0 0.0)
