@@ -3,6 +3,15 @@
 
 (layer layer1
        (in #:file "src7.rkt"
+           [on-entry
+            (define test%
+              (class object%
+                (super-new)))
+            (define a (new test%))
+            (define b (new test%))
+            (define c (new test%))
+            (edge a b "ab")
+            (edge b c "bc")]
            [on-exit (timeline r)
                     (timeline y)]
            [(fact) 

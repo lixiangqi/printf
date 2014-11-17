@@ -33,6 +33,7 @@
     (define max-width (apply max (map (lambda (s) (car (get-text-size s))) labels)))
     (define start-x #f)
     (define start-y #f)
+    (define focus 0)
     (define square-size 50)
     (define square-center (/ square-size 2))
     (define text-height (cdr (get-text-size "test")))
@@ -157,6 +158,12 @@
         (when (< i max-frame-number)
           (send dc draw-text (format "~a" (add1 i)) (+ start-x 2 (* square-size i)) square-center)
           (loop (add1 i)))))
+    
+    (define/private (display-focus-info)
+      (unless (= focus -1)
+        
+        (void)
+        ))
       
     (define/override (on-paint)
       (set! start-x max-width)
@@ -171,9 +178,11 @@
               [assert? (list-ref asserts i)])
           (case t
             [(number) (visualize-number d)]
-            [(boolean) (if assert? (visualize-boolean d "LightGray" "Red") (visualize-boolean d "DodgerBlue" "Red"))]
+            [(boolean) (if assert? (visualize-boolean d "LightGray" "Red") (visualize-boolean d "Navy" "Red"))]
             [(other) (visualize-other-data d)])
           (set! start-y (+ start-y square-size)))))
+    
+    (define/public (scrutinize cur) (set! focus (sub1 cur)))
     
     (define/public (get-actual-width)
       (inexact->exact (ceiling (+ max-label-width (* max-frame-number square-size) 5))))
