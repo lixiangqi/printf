@@ -10,7 +10,6 @@
     (inherit get-dc)
     (super-new)
     
-    (printf "data=~v\n" data)
     (define labels (map first data))
     (define asserts (map second data))
     (define values (map third data))
@@ -32,7 +31,6 @@
     (define max-width (apply max (map (lambda (s) (car (get-text-size s))) labels)))
     (define start-x #f)
     (define start-y #f)
-    
     (define square-size 50)
     (define square-center (/ square-size 2))
     (define text-height (cdr (get-text-size "test")))
@@ -59,6 +57,7 @@
       (define space 6)
       (define ellipse-width 6)
       (define radius (/ ellipse-width 2))
+      (define len (length l))
       
       (define (get-line-position x1 y1 x2 y2)
         (define theta (atan (- y2 y1) (- x2 x1)))
@@ -70,27 +69,47 @@
         (define line-y1 (+ y1 n))
         (define line-x2 (- x2 m))
         (define line-y2 (- y2 n))
-        (values line-x1 line-y1 line-x2 line-y2))
+        (list line-x1 line-y1 line-x2 line-y2))
       
-      (unless (zero? units)
-      (define unit-length (/ (- square-size space space) units))
-      (define len (length l))
-      
+      (define (draw-gray-background)
+        (send dc set-pen "White" 0 'solid)
         (send dc set-brush "LightGray" 'solid)
-      (let loop ([i 0])
-        (when (< i len)
-          (let* ([val (list-ref l i)]
-                 [plot-height (* (- val lower-bound) unit-length)]
-                 [ellipse-x (- (+ start-x (* square-size i) square-center) radius)]
-                 [ellipse-y (- (+ start-y (- square-size space plot-height)) radius)])
-            (send dc set-pen "White" 0 'solid)
+        (let loop ([i 0])
+          (when (< i len)
             (send dc draw-rectangle (+ start-x (* square-size i)) start-y square-size square-size)
-            (send dc set-pen "DodgerBlue" 1 'solid)
-            (send dc draw-ellipse ellipse-x ellipse-y ellipse-width ellipse-width)
             (loop (add1 i)))))
         
-        (send dc set-pen "White" 0 'solid)
-        ))
+      (draw-gray-background)
+      (cond 
+        [(zero? units)
+         (let loop ([i 0])
+           (when (< i len)
+             (let ([center-x (+ start-x (* square-size i) square-center)]
+                   [center-y (+ start-y square-center)])
+               (send dc set-pen "DodgerBlue" 2 'solid)
+               (send dc draw-ellipse (- center-x radius) (- center-y radius) ellipse-width ellipse-width)
+               (when (< i (sub1 len))
+                 (send dc draw-line (+ center-x radius) center-y (- (+ center-x square-size) radius) center-y))
+               (loop (add1 i)))))]
+        [else
+         (define unit-length (/ (- square-size space space) units))
+         (define plot-heights (map (lambda (v) (* (- v lower-bound) unit-length)) l))
+         (let loop ([i 0])
+           (when (< i len)
+             (let* ([plot-height (list-ref plot-heights i)]
+                    [center-x (+ start-x (* square-size i) square-center)]
+                    [center-y (+ start-y (- square-size space plot-height))]
+                    [ellipse-x (- center-x radius)]
+                    [ellipse-y (- center-y radius)])
+               (send dc set-pen "DodgerBlue" 2 'solid)
+               (send dc draw-ellipse ellipse-x ellipse-y ellipse-width ellipse-width)
+               (when (< i (sub1 len))
+                 (let* ([next-height (list-ref plot-heights (add1 i))]
+                        [next-y (+ start-y (- square-size space next-height))]
+                        [line-pos (get-line-position center-x center-y (+ center-x square-size) next-y)])
+                   (send dc draw-line (first line-pos) (second line-pos) (third line-pos) (fourth line-pos))))
+               (loop (add1 i)))))])
+        (send dc set-pen "White" 0 'solid))
     
     (define/private (visualize-boolean l true-color false-color)
       (define len (length l))
@@ -110,16 +129,16 @@
       (define ellipsis-start-y (+ start-y square-center))
       (let loop ([i 0])
         (when (< i len)
-          (let ([value (format "~v" (list-ref l i))]) ; (* square-size i)
+          (let* ([value (format "~v" (list-ref l i))]
+                 [m (* square-size i)]
+                 [bm (make-object bitmap% bitmap-width bitmap-height #f #t)]
+                 [bm-dc (new bitmap-dc% [bitmap bm])]) 
           (send dc set-brush "LightGray" 'solid)
-          (send dc draw-rectangle (+ start-x (* square-size i)) start-y square-size square-size)
-          (define bm (make-object bitmap% bitmap-width bitmap-height #f #t))
-          (define bm-dc (new bitmap-dc% [bitmap bm]))
-          
+          (send dc draw-rectangle (+ start-x m) start-y square-size square-size)
           (send bm-dc draw-text value 0 0)
-          (send dc draw-bitmap bm (+ bm-start-x (* square-size i)) bm-start-y)
+          (send dc draw-bitmap bm (+ bm-start-x m) bm-start-y)
           (when (> (car (get-text-size value)) (add1 bitmap-width)) 
-            (send dc draw-text "..." (+ ellipsis-start-x (* square-size i)) ellipsis-start-y))
+            (send dc draw-text "..." (+ ellipsis-start-x m) ellipsis-start-y))
           (loop (add1 i))))))
     
     (define/private (draw-labels)
@@ -142,7 +161,6 @@
     (define/override (on-paint)
       (set! start-x max-width)
       (set! start-y square-size)
-      
       (draw-labels)
       (draw-frame-number)
       (send dc set-text-foreground "Black")
@@ -153,40 +171,6 @@
               [assert? (list-ref asserts i)])
           (case t
             [(number) (visualize-number d)]
-            [(boolean) (if assert? (visualize-boolean d "LightGray" "Red") (visualize-boolean d "Blue" "Red"))]
+            [(boolean) (if assert? (visualize-boolean d "LightGray" "Red") (visualize-boolean d "DodgerBlue" "Red"))]
             [(other) (visualize-other-data d)])
-          (set! start-y (+ start-y square-size))))
-                       
-      
-      
-      
-      
-      
-      
-      ;(send dc set-pen "White" 0 'solid)
-      ;(visualize-boolean (cdr (second data)))
-      ;(visualize-other-data (cdr (third data)))
-      
-      
-;      (send dc set-brush "Firebrick" 'solid)
-;      
-;      (send dc draw-rectangle start start square-size square-size)
-;      (send dc set-brush "ForestGreen" 'solid)
-;      (send dc draw-rectangle (+ square-size start) start square-size square-size)
-;      
-;      (define bm (make-object bitmap% (- square-size 2) 25 #f #t))
-;      (define bm-dc (new bitmap-dc% [bitmap bm]))
-;      (send bm-dc draw-text "hellohellohello" 0 0)
-;      (send dc draw-bitmap bm start start)
-;      (send dc draw-text "..." 70 80)
-;      
-;      #;(let loop ([i 0])
-;        (when (< i 10)
-;          (send dc draw-rectangle (+ start (* square-size i)) start square-size square-size)
-;          (loop (add1 i))))
-;      ;(send dc draw-line 0 50 4000 50)
-      #;(send dc draw-rectangle 3948 60 50 50))
-      
-      
-    
-    ))
+          (set! start-y (+ start-y square-size)))))))
