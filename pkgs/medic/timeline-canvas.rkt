@@ -52,19 +52,56 @@
     (define ellipsis-offset (- square-center (/ (get-text-width "...") 2)))
     
     (define/private (visualize-number l)
-      (void))
+      
+      (define lower-bound (inexact->exact (floor (apply min l))))
+      (define upper-bound (inexact->exact (ceiling (apply max l))))
+      (define units (- upper-bound lower-bound))
+      (define space 6)
+      (define ellipse-width 6)
+      (define radius (/ ellipse-width 2))
+      
+      (define (get-line-position x1 y1 x2 y2)
+        (define theta (atan (- y2 y1) (- x2 x1)))
+        (define sint (sin theta))
+        (define cost (cos theta))
+        (define m (* radius cost))
+        (define n (* radius sint))
+        (define line-x1 (+ x1 m))
+        (define line-y1 (+ y1 n))
+        (define line-x2 (- x2 m))
+        (define line-y2 (- y2 n))
+        (values line-x1 line-y1 line-x2 line-y2))
+      
+      (unless (zero? units)
+      (define unit-length (/ (- square-size space space) units))
+      (define len (length l))
+      
+        (send dc set-brush "LightGray" 'solid)
+      (let loop ([i 0])
+        (when (< i len)
+          (let* ([val (list-ref l i)]
+                 [plot-height (* (- val lower-bound) unit-length)]
+                 [ellipse-x (- (+ start-x (* square-size i) square-center) radius)]
+                 [ellipse-y (- (+ start-y (- square-size space plot-height)) radius)])
+            (send dc set-pen "White" 0 'solid)
+            (send dc draw-rectangle (+ start-x (* square-size i)) start-y square-size square-size)
+            (send dc set-pen "DodgerBlue" 1 'solid)
+            (send dc draw-ellipse ellipse-x ellipse-y ellipse-width ellipse-width)
+            (loop (add1 i)))))
+        
+        (send dc set-pen "White" 0 'solid)
+        ))
     
-    (define/private (visualize-boolean l)
+    (define/private (visualize-boolean l true-color false-color)
       (define len (length l))
       (let loop ([i 0])
         (when (< i len)
           (if (list-ref l i)
-              (send dc set-brush "Blue" 'solid)
-              (send dc set-brush "Red" 'solid))
+              (send dc set-brush true-color 'solid)
+              (send dc set-brush false-color 'solid))
           (send dc draw-rectangle (+ start-x (* square-size i)) start-y square-size square-size)
-          (loop (add1 i))))
-      (set! start-y (+ start-y square-size)))
-    
+          (loop (add1 i)))))
+   
     (define/private (visualize-other-data l)
       (define len (length l))
       (define bm-start-x (+ start-x 2))
@@ -83,8 +120,7 @@
           (send dc draw-bitmap bm (+ bm-start-x (* square-size i)) bm-start-y)
           (when (> (car (get-text-size value)) (add1 bitmap-width)) 
             (send dc draw-text "..." (+ ellipsis-start-x (* square-size i)) ellipsis-start-y))
-          (loop (add1 i)))))
-      (set! start-y (+ start-y square-size)))
+          (loop (add1 i))))))
     
     (define/private (draw-labels)
       (send dc set-text-foreground "Gray")
@@ -103,26 +139,29 @@
           (send dc draw-text (format "~a" (add1 i)) (+ start-x 2 (* square-size i)) square-center)
           (loop (add1 i)))))
       
-            
-      
-      
-      
     (define/override (on-paint)
       (set! start-x max-width)
       (set! start-y square-size)
+      
       (draw-labels)
       (draw-frame-number)
       (send dc set-text-foreground "Black")
       (send dc set-pen "White" 0 'solid)
       (for ([i (in-range (length types))])
         (let ([t (list-ref types i)]
-              [d (list-ref values i)])
+              [d (list-ref values i)]
+              [assert? (list-ref asserts i)])
           (case t
             [(number) (visualize-number d)]
-            [(boolean) (visualize-boolean d)]
-            [(other) (visualize-other-data d)])))
-              
+            [(boolean) (if assert? (visualize-boolean d "LightGray" "Red") (visualize-boolean d "Blue" "Red"))]
+            [(other) (visualize-other-data d)])
+          (set! start-y (+ start-y square-size))))
                        
+      
+      
+      
+      
+      
       
       ;(send dc set-pen "White" 0 'solid)
       ;(visualize-boolean (cdr (second data)))
