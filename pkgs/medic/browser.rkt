@@ -52,29 +52,34 @@
     (new slider% [label "Timeline"] [min-value 0] [max-value 10] [parent timeline-panel])
     
     (define-values (graph-width graph-height) (send graph-panel get-size))
-    #;(define graph-pb (new graph-pasteboard%
+    (define graph-pb (new graph-pasteboard%
                           [raw-edges (get-raw-edges)]
                           [width graph-width]
                           [height graph-height]))
-    (define graph-pb (new text%))
+    
+    #;(define graph-pb (new text%))
  
     (new editor-canvas% 
          [parent log-panel]
          [style '(auto-hscroll)])
-    #;(define data (list (cons "x" (list 3 7 5 9 10))
-                       (cons "x > 5" (list #f #t #f #t #t))
-                       (cons "str" (list "hello" "world" 1 #t "time line" "core" "canvas"))))
     
-    (define data (list (cons "x" (list #f #f #f #f #t))
-                       (cons "x > 5" (list #f #t #f #t #t))
-                       (cons "str" (list "hello" "world" 1 #t "time line" "core" "canvas"))))
+    (define data (list 
+                  (list "x" #f (list 3 7 5 9 10))
+                  (list "y" #f (list -1 2 3 -4 5))
+                  (list "z" #f (list -1 2.0 1/3 -4 5))
+                  (list "x" #f (list #f #f #f #f #t))
+                  (list "x > 5" #t (list #f #t #f #t #t))
+                  (list "str" #f (list "hello" "world" 1 #t "time line" "core" "canvas"))))
     
-    ;(printf "timeline-table = ~v\n" (get-timeline-table))
     (define timeline-canvas (new timeline-canvas%
-                                 [data (get-timeline-data)]
+                                 ;[data (get-timeline-data)]
+                                 [data data]
                                  [parent timeline-panel]
                                  [style '(hscroll vscroll)]))
-    (send timeline-canvas init-auto-scrollbars 4000 300 0.0 0.0)
+    (send timeline-canvas init-auto-scrollbars 
+          (send timeline-canvas get-actual-width) 
+          (send timeline-canvas get-actual-height)
+          0.0 0.0)
     (send timeline-canvas show-scrollbars #t #t)
     (new editor-canvas%
          [parent graph-panel]

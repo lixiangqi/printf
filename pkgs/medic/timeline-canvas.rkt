@@ -26,6 +26,8 @@
         [else 'other]))
     
     (define types (map convert-to-type values))
+    (define max-label-width (apply max (map (lambda (s) (get-text-width s)) labels)))
+    (define max-frame-number (apply max (map length values)))
     
     (define timeline-space 50)
     (define max-width (apply max (map (lambda (s) (car (get-text-size s))) labels)))
@@ -143,7 +145,6 @@
     
     (define/private (draw-labels)
       (send dc set-text-foreground "Gray")
-      (define max-label-width (apply max (map (lambda (s) (get-text-width s)) labels)))
       (set! start-x (+ 2 max-label-width))
       (define len (length labels))
       (let loop ([i 0])
@@ -152,9 +153,8 @@
           (loop (add1 i)))))
     
     (define/private (draw-frame-number)
-      (define max-number (apply max (map length values)))
       (let loop ([i 0])
-        (when (< i max-number)
+        (when (< i max-frame-number)
           (send dc draw-text (format "~a" (add1 i)) (+ start-x 2 (* square-size i)) square-center)
           (loop (add1 i)))))
       
@@ -173,4 +173,10 @@
             [(number) (visualize-number d)]
             [(boolean) (if assert? (visualize-boolean d "LightGray" "Red") (visualize-boolean d "DodgerBlue" "Red"))]
             [(other) (visualize-other-data d)])
-          (set! start-y (+ start-y square-size)))))))
+          (set! start-y (+ start-y square-size)))))
+    
+    (define/public (get-actual-width)
+      (inexact->exact (ceiling (+ max-label-width (* max-frame-number square-size) 5))))
+    
+    (define/public (get-actual-height)
+      (inexact->exact (ceiling (+ (* (add1 (length labels)) square-size) 5))))))
