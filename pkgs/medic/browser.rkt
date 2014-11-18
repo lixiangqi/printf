@@ -12,7 +12,9 @@
   
 (define (make-trace-browser fn)
   (define frame (new trace-frame% [filename fn]))
-  (send frame show #t))
+  (send frame show #t)
+  (printf "frame-x=~v, y=~v\n" (send frame get-x) (send frame get-y))
+  )
 
 (define trace-frame%
   (class (frame:basic-mixin frame%)

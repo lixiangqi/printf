@@ -1,6 +1,7 @@
 #lang racket
 
-(require racket/gui/base)
+(require racket/gui/base
+         "tooltip.rkt")
 
 (provide timeline-canvas%)
 
@@ -181,9 +182,21 @@
             [(boolean) (if assert? (visualize-boolean d "LightGray" "Red") (visualize-boolean d "Navy" "Red"))]
             [(other) (visualize-other-data d)])
           (set! start-y (+ start-y square-size))))
-      (display-focus-info))
+      (display-focus-info)
+      #|
+      (define tooltip-frame (new tooltip-frame%))
+      (send tooltip-frame show #t)
+      (send tooltip-frame set-tooltip (list "heiheiaaaaaaaaaaaaaa"))
+      (send tooltip-frame show-over 550 550 20 20)
+      
+      (define tooltip-frame1 (new tooltip-frame%))
+      (send tooltip-frame1 show #t)
+      (send tooltip-frame1 set-tooltip (list "sunsunnnnnnn"))
+      (send tooltip-frame1 show-over 550 700 20 20)
+      |#
+      )
     
-    (define/public (scrutinize cur) 
+    (define/public (scrutinize cur)
       (set! focus (sub1 cur))
       (refresh))
     
