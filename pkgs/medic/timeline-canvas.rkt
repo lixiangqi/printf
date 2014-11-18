@@ -7,7 +7,7 @@
 (define timeline-canvas%
   (class canvas%
     (init-field (data #f))
-    (inherit get-dc)
+    (inherit get-dc refresh)
     (super-new)
     
     (define labels (map first data))
@@ -30,10 +30,10 @@
     (define max-frame-number (apply max (map length values)))
     
     (define timeline-space 50)
-    (define max-width (apply max (map (lambda (s) (car (get-text-size s))) labels)))
     (define start-x #f)
     (define start-y #f)
-    (define focus 0)
+    (define init-x (+ 2 max-label-width))
+    (define focus -1)
     (define square-size 50)
     (define square-center (/ square-size 2))
     (define text-height (cdr (get-text-size "test")))
@@ -89,7 +89,7 @@
            (when (< i len)
              (let ([center-x (+ start-x (* square-size i) square-center)]
                    [center-y (+ start-y square-center)])
-               (send dc set-pen "DodgerBlue" 2 'solid)
+               (send dc set-pen "DodgerBlue" 1 'solid)
                (send dc draw-ellipse (- center-x radius) (- center-y radius) ellipse-width ellipse-width)
                (when (< i (sub1 len))
                  (send dc draw-line (+ center-x radius) center-y (- (+ center-x square-size) radius) center-y))
@@ -104,7 +104,7 @@
                     [center-y (+ start-y (- square-size space plot-height))]
                     [ellipse-x (- center-x radius)]
                     [ellipse-y (- center-y radius)])
-               (send dc set-pen "DodgerBlue" 2 'solid)
+               (send dc set-pen "DodgerBlue" 1 'solid)
                (send dc draw-ellipse ellipse-x ellipse-y ellipse-width ellipse-width)
                (when (< i (sub1 len))
                  (let* ([next-height (list-ref plot-heights (add1 i))]
@@ -146,7 +146,6 @@
     
     (define/private (draw-labels)
       (send dc set-text-foreground "Gray")
-      (set! start-x (+ 2 max-label-width))
       (define len (length labels))
       (let loop ([i 0])
         (when (< i len)
@@ -161,12 +160,13 @@
     
     (define/private (display-focus-info)
       (unless (= focus -1)
-        
-        (void)
-        ))
+        (let ([line-x (+ init-x square-center (* square-size focus))]
+              [line-y (+ square-size (* (length labels) square-size))])
+          (send dc set-pen "Yellow" 1 'solid)
+          (send dc draw-line line-x square-size line-x line-y))))
       
     (define/override (on-paint)
-      (set! start-x max-width)
+      (set! start-x init-x)
       (set! start-y square-size)
       (draw-labels)
       (draw-frame-number)
@@ -180,9 +180,12 @@
             [(number) (visualize-number d)]
             [(boolean) (if assert? (visualize-boolean d "LightGray" "Red") (visualize-boolean d "Navy" "Red"))]
             [(other) (visualize-other-data d)])
-          (set! start-y (+ start-y square-size)))))
+          (set! start-y (+ start-y square-size))))
+      (display-focus-info))
     
-    (define/public (scrutinize cur) (set! focus (sub1 cur)))
+    (define/public (scrutinize cur) 
+      (set! focus (sub1 cur))
+      (refresh))
     
     (define/public (get-actual-width)
       (inexact->exact (ceiling (+ max-label-width (* max-frame-number square-size) 5))))
