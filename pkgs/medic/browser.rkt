@@ -12,9 +12,7 @@
   
 (define (make-trace-browser fn)
   (define frame (new trace-frame% [filename fn]))
-  (send frame show #t)
-  (printf "frame-x=~v, y=~v\n" (send frame get-x) (send frame get-y))
-  )
+  (send frame show #t))
 
 (define trace-frame%
   (class (frame:basic-mixin frame%)
@@ -55,12 +53,13 @@
     (define timeline-data (get-timeline-data))
     (set! timeline-data 
           (list 
+           (list "str" #f (list "hello" "world" 1 #t "time line" "core" "canvas"))
            (list "x" #f (list 3 7 5 9 10))
            (list "y" #f (list -1 2 3 -4 5))
            (list "z" #f (list 5 5 5 5 5))
            (list "x" #f (list #f #f #f #f #t))
            (list "x > 5" #t (list #f #t #f #t #t))
-           (list "str" #f (list "hello" "world" 1 #t "time line" "core" "canvas"))))
+           ))
     (define max-length (apply max (map length (map third timeline-data))))
     
     (define slider-panel (new horizontal-panel% 

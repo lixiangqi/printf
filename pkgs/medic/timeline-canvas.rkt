@@ -8,7 +8,8 @@
 (define timeline-canvas%
   (class canvas%
     (init-field (data #f))
-    (inherit get-dc refresh)
+    (inherit get-dc refresh client->screen
+             get-top-level-window)
     (super-new)
     
     (define labels (map first data))
@@ -159,12 +160,35 @@
           (send dc draw-text (format "~a" (add1 i)) (+ start-x 2 (* square-size i)) square-center)
           (loop (add1 i)))))
     
+    (define value-tooltips (make-vector (length labels)))
+    (for ([i (in-range (length values))])
+      (vector-set! value-tooltips i (new tooltip-frame% [frame-to-track (get-top-level-window)])))
+    
     (define/private (display-focus-info)
-      (unless (= focus -1)
-        (let ([line-x (+ init-x square-center (* square-size focus))]
-              [line-y (+ square-size (* (length labels) square-size))])
+      (define len (length values))
+      (cond
+        [(= focus -1)
+         (for ([i (in-range len)])
+           (send (vector-ref value-tooltips i) show #f))]
+        [else
+        (let* ([len (length values)]
+               [line-x (+ init-x square-center (* square-size focus))]
+               [line-y (+ square-size (* len square-size))]
+               [tooltip-x (inexact->exact (ceiling (+ line-x 10)))])
           (send dc set-pen "Yellow" 1 'solid)
-          (send dc draw-line line-x square-size line-x line-y))))
+          (send dc draw-line line-x square-size line-x line-y)
+          (for ([i (in-range len)])
+            (define series (list-ref values i))
+            (if (< focus (length series))
+                (let* ([val (list-ref series focus)]
+                       [current-tooltip (vector-ref value-tooltips i)]
+                       [tooltip-height (cdr (get-text-size (format "~v" val)))]
+                       [tooltip-y (inexact->exact (ceiling (+ (* square-size (add1 i)) (- square-center (/ tooltip-height 2)))))])
+                  (define-values (canvas-screen-x canvas-screen-y) (client->screen 0 0))
+                  (define-values (mx my) (get-display-left-top-inset #:monitor 0))
+                  (send current-tooltip set-tooltip (list (format "~v" val)))
+                  (send current-tooltip show-over (+ canvas-screen-x tooltip-x (- mx)) (+ canvas-screen-y tooltip-y (- my)) 0 0))
+                (send (vector-ref value-tooltips i) show #f))))]))
       
     (define/override (on-paint)
       (set! start-x init-x)
@@ -182,19 +206,7 @@
             [(boolean) (if assert? (visualize-boolean d "LightGray" "Red") (visualize-boolean d "Navy" "Red"))]
             [(other) (visualize-other-data d)])
           (set! start-y (+ start-y square-size))))
-      (display-focus-info)
-      #|
-      (define tooltip-frame (new tooltip-frame%))
-      (send tooltip-frame show #t)
-      (send tooltip-frame set-tooltip (list "heiheiaaaaaaaaaaaaaa"))
-      (send tooltip-frame show-over 550 550 20 20)
-      
-      (define tooltip-frame1 (new tooltip-frame%))
-      (send tooltip-frame1 show #t)
-      (send tooltip-frame1 set-tooltip (list "sunsunnnnnnn"))
-      (send tooltip-frame1 show-over 550 700 20 20)
-      |#
-      )
+      (display-focus-info))
     
     (define/public (scrutinize cur)
       (set! focus (sub1 cur))
