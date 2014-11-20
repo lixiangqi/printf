@@ -9,7 +9,9 @@
   (class canvas%
     (init-field (data #f))
     (inherit get-dc refresh client->screen
-             get-top-level-window)
+             get-top-level-window
+             get-view-start
+             get-client-size)
     (super-new)
     
     (define labels (map first data))
@@ -32,16 +34,22 @@
     (define max-frame-number (apply max (map length values)))
     
     (define timeline-space 50)
-    (define start-x #f)
-    (define start-y #f)
-    (define init-x (+ 2 max-label-width))
     (define focus -1)
     (define square-size 50)
     (define square-center (/ square-size 2))
+    (define start-x #f)
+    (define start-y #f)
+    (define init-x (+ 2 max-label-width))
+    (define init-y square-size)
     (define text-height (cdr (get-text-size "test")))
     (define bitmap-width (inexact->exact (- square-size 4)))
     (define bitmap-height (inexact->exact text-height))
     (define offset (- square-center bitmap-height))
+    
+    (define single-tooltip (new tooltip-frame% [frame-to-track (get-top-level-window)]))
+    (define value-tooltips (make-vector (length labels)))
+    (for ([i (in-range (length values))])
+      (vector-set! value-tooltips i (new tooltip-frame% [frame-to-track (get-top-level-window)])))
     
     (define/private (get-text-size str)
       (define dc (new bitmap-dc% [bitmap (make-object bitmap% 1 1)]))
@@ -160,10 +168,6 @@
           (send dc draw-text (format "~a" (add1 i)) (+ start-x 2 (* square-size i)) square-center)
           (loop (add1 i)))))
     
-    (define value-tooltips (make-vector (length labels)))
-    (for ([i (in-range (length values))])
-      (vector-set! value-tooltips i (new tooltip-frame% [frame-to-track (get-top-level-window)])))
-    
     (define/private (display-focus-info)
       (define len (length values))
       (cond
@@ -178,21 +182,30 @@
           (send dc set-pen "Yellow" 1 'solid)
           (send dc draw-line line-x square-size line-x line-y)
           (for ([i (in-range len)])
-            (define series (list-ref values i))
-            (if (< focus (length series))
-                (let* ([val (list-ref series focus)]
-                       [current-tooltip (vector-ref value-tooltips i)]
-                       [tooltip-height (cdr (get-text-size (format "~v" val)))]
-                       [tooltip-y (inexact->exact (ceiling (+ (* square-size (add1 i)) (- square-center (/ tooltip-height 2)))))])
-                  (define-values (canvas-screen-x canvas-screen-y) (client->screen 0 0))
-                  (define-values (mx my) (get-display-left-top-inset #:monitor 0))
-                  (send current-tooltip set-tooltip (list (format "~v" val)))
-                  (send current-tooltip show-over (+ canvas-screen-x tooltip-x (- mx)) (+ canvas-screen-y tooltip-y (- my)) 0 0))
-                (send (vector-ref value-tooltips i) show #f))))]))
+            (define-values (virtual-x virtual-y) (get-view-start))
+            (define-values (width height) (get-client-size))
+            (define current-unit-y (* square-size (add1 i)))
+            (cond
+              [(or (< current-unit-y virtual-y)
+                   (> current-unit-y (+ virtual-y height)))
+                (send (vector-ref value-tooltips i) show #f)]
+              [else
+               (define series (list-ref values i))
+               (if (< focus (length series))
+                   (let* ([val (list-ref series focus)]
+                          [current-tooltip (vector-ref value-tooltips i)]
+                          [tooltip-height (cdr (get-text-size (format "~v" val)))]
+                          [tooltip-y (inexact->exact (ceiling (+ current-unit-y (- square-center (/ tooltip-height 2)) (- virtual-y))))])
+                     (define-values (canvas-screen-x canvas-screen-y) (client->screen 0 0))
+                     (define-values (mx my) (get-display-left-top-inset #:monitor 0))
+                     (send current-tooltip show #f)
+                     (send current-tooltip set-tooltip (list (format "~v" val)))
+                     (send current-tooltip show-over (+ canvas-screen-x tooltip-x (- mx)) (+ canvas-screen-y tooltip-y (- my)) 0 0))
+                   (send (vector-ref value-tooltips i) show #f))])))]))
       
     (define/override (on-paint)
       (set! start-x init-x)
-      (set! start-y square-size)
+      (set! start-y init-y)
       (draw-labels)
       (draw-frame-number)
       (send dc set-text-foreground "Black")
@@ -207,6 +220,30 @@
             [(other) (visualize-other-data d)])
           (set! start-y (+ start-y square-size))))
       (display-focus-info))
+    
+    (define/private (mouse-position->timeline-value x y)
+      (define-values (h v) (get-view-start))
+      (define virtual-x (+ h x))
+      (define virtual-y (+ v y))
+      (define col (inexact->exact (floor (/ (- virtual-x init-x) square-size))))
+      (define row (inexact->exact (floor (/ (- virtual-y init-y) square-size))))
+      (when (and (>= row 0) (>= col 0)  (< row (length labels)))
+        (define series (list-ref values row))
+        (when (< col (length series))
+          (send single-tooltip show #f)
+          (define val (format "~v" (list-ref series col)))
+          (define-values (canvas-screen-x canvas-screen-y) (client->screen 0 0))
+          (define-values (mx my) (get-display-left-top-inset #:monitor 0))
+          (send single-tooltip set-tooltip (list val))
+          (send single-tooltip show-over (+ 15 canvas-screen-x x (- mx)) (+ canvas-screen-y y (- my)) 0 0))))
+    
+    (define/override (on-event evt)
+      (cond
+        [(send evt button-down? 'left)
+         (mouse-position->timeline-value (send evt get-x) (send evt get-y))]
+        [(send evt button-up? 'left)
+         (send single-tooltip show #f)]))
+      
     
     (define/public (scrutinize cur)
       (set! focus (sub1 cur))

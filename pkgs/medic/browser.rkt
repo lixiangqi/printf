@@ -53,12 +53,21 @@
     (define timeline-data (get-timeline-data))
     (set! timeline-data 
           (list 
-           (list "str" #f (list "hello" "world" 1 #t "time line" "core" "canvas"))
-           (list "x" #f (list 3 7 5 9 10))
-           (list "y" #f (list -1 2 3 -4 5))
-           (list "z" #f (list 5 5 5 5 5))
-           (list "x" #f (list #f #f #f #f #t))
-           (list "x > 5" #t (list #f #t #f #t #t))
+           (list "str1" #f (list "hello" "world" 1 #t "time line" "core" "canvas" "to" 'started 'loop 'download 'it 6 9 #t #f
+                                "hello" "world" 1 #t "time line" "core" "canvas" "to" 'started 'loop 'download 'it 6 9 #t #f))
+           (list "x1" #f (list 3 7 5 9 10))
+           (list "y1" #f (list -1 2 3 -4 5))
+           (list "z1" #f (list 5 5 5 5 5))
+           (list "x1" #f (list #f #f #f #f #t))
+           (list "x1 > 5" #t (list #f #t #f #t #t))
+           
+           (list "str2" #f (list "hello" "world" 1 #t "time line" "core" "canvas" "to" 'started 'loop 'download 'it 6 9 #t #f
+                                "hello" "world" 1 #t "time line" "core" "canvas" "to" 'started 'loop 'download 'it 6 9 #t #f))
+           (list "x2" #f (list 3 7 5 9 10))
+           (list "y2" #f (list -1 2 3 -4 5))
+           (list "z2" #f (list 5 5 5 5 5))
+           (list "x2" #f (list #f #f #f #f #t))
+           (list "x2 > 5" #t (list #f #t #f #t #t))
            ))
     (define max-length (apply max (map length (map third timeline-data))))
     
