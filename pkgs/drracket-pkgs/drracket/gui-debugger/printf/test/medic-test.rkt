@@ -18,5 +18,10 @@
 ;(medic "src1-medic.rkt")
 ;(medic "src1.rkt")
 
+#|
 (medic "debug7.rkt")
 (debug "src7.rkt")
+|#
+
+(medic "debug6.rkt")
+(debug "src6.rkt")

@@ -111,7 +111,7 @@
   
   ; interpret-match-expr: syntax string-of-file-name -> void
   (define (interpret-match-expr stx fn)
-    (syntax-case stx (ref at with-action each-function with-start each-expression)
+    (syntax-case stx (ref at with-behavior each-function with-start each-expression)
       [(ref debug-id)
        (let* ([id (syntax->datum #'debug-id)]
               [expr (hash-ref debug-table id #f)])
@@ -127,7 +127,7 @@
                      (for-each (lambda (e) (interpret-match-expr e fn)) (syntax->list found-expr)))
                   (iterate (rest lst))))]))]
       
-      [(with-action f s)
+      [(with-behavior f s)
        (let* ([fun (syntax->datum #'f)]
               [str (format "~a" (syntax->datum #'s))]
               [at-args (regexp-match* #px"@\\w+" str)]
