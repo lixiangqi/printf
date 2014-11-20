@@ -3,6 +3,7 @@
 (require racket/class
          racket/gui/base
          framework
+         "log-text.rkt"
          "graph-pasteboard.rkt"
          "timeline-canvas.rkt"
          "visual-util.rkt")
@@ -97,10 +98,13 @@
                           [raw-edges (get-raw-edges)]
                           [width graph-width]
                           [height graph-height]))
- 
+    
+    (define log-text (new log-text%))
+    
     (new editor-canvas% 
          [parent log-panel]
-         [style '(auto-hscroll)])
+         [editor log-text]
+         [style '(auto-hscroll auto-vscroll)])
     
     
     
