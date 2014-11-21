@@ -4,4 +4,6 @@
        (in #:file "src6.rkt"
            (with-behavior fact "function fact takes @x and returns @,ret")
            [(fact) [on-entry 
-                    (printf "[debug]layer1 entered.\n")]]))
+                    (log x)
+                    (printf "[debug]layer1 entered.\n")]]
+           [on-exit (log (fact 3))]))

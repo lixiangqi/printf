@@ -157,7 +157,7 @@
         (rearm
          expr
          (kernel:kernel-syntax-case*
-          (disarm expr) #f (edge timeline assert)
+          (disarm expr) #f (log edge timeline assert)
           [var-stx (identifier? (syntax var-stx))
                    (if (syntax-property #'var-stx 'medic)
                        (or (find-bound-var/wrap-context #'var-stx bound-vars) expr)
@@ -199,6 +199,13 @@
            (quasisyntax/loc expr (with-continuation-mark key
                                    #,(annotate #'mark bound-vars id-layer id)
                                    #,(annotate #'body bound-vars id-layer id)))]
+          
+          ;(x)
+          ;((#%app fact (quote 3)))
+          [(#%plain-app log . d)
+           (begin
+             (printf "log case..d=~v\n" #'d)
+             expr)]
           
           [(#%plain-app edge . args)
            (edge-expression-annotator #'args)]
