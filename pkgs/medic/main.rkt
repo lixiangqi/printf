@@ -130,12 +130,11 @@
       [(with-behavior f s)
        (let* ([fun (syntax->datum #'f)]
               [str (format "~a" (syntax->datum #'s))]
-              [at-args (regexp-match* #px"@\\w+" str)]
-              [at-ret (regexp-match* #px"@,\\w+" str)]
-              [args (map (lambda (a) (string-trim a "@")) at-args)]
-              [ret (if (null? at-ret) at-ret (string-trim (first at-ret) "@,"))]
+              [at-args (remove-duplicates (regexp-match* #px"@\\w+" str))]
+              [at-ret (remove-duplicates (regexp-match* #px"@,\\w+" str))]
+              [ret (if (null? at-ret) #f (car at-ret))]
               [table (hash-ref template fn)])
-         (hash-set! table fun (list str args ret)))]
+         (hash-set! table fun (list str at-args ret)))]
       
       [[each-function to-insert ...]
        (for-each (lambda (e) (interpret-insert-expr e fn (list 'each-function))) (syntax->list #'(to-insert ...)))]

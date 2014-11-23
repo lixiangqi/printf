@@ -3,6 +3,7 @@
   (require (prefix-in kernel: syntax/kerncase)
            (for-syntax scheme/base)
            (only-in mzscheme [apply plain-apply])
+           racket/string
            "redirect.rkt"
            "visual-util.rkt"
            "visual-lib.rkt")
@@ -19,7 +20,9 @@
        (cons #'var (arglist-bindings #'others))]))
   
   (define (annotate-stx stx template)
+    (printf "template=~v\n" template)
     (define top-level-ids '())
+    (define args-table (make-hash))
     
     (define (add-top-level-id var)
       (set! top-level-ids (cons var top-level-ids)))
@@ -112,8 +115,11 @@
          clause #f
          [(arg-list . bodies)
           (let* ([new-bound-vars (arglist-bindings #'arg-list)]
+                 [arg-strs (map (lambda (v) (format "~a" (syntax->datum v))) new-bound-vars)]
                  [all-bound-vars (append new-bound-vars bound-vars)]
                  [new-bodies (map (lambda (e) (annotate e all-bound-vars id-layer id)) (syntax->list #'bodies))])
+            (when (hash-has-key? template id)
+              (hash-set! args-table id arg-strs))
             #;(when id
               (printf "new bode=~v\n" new-bodies)
               (printf "res...=~v\n" (hash-ref template id)))
@@ -121,7 +127,51 @@
                   (arg-list
                   ; (printf "lambda entered.exp=~v\n" (list #,@new-bodies))
                    #,@new-bodies)))]))
-      
+     
+      (define (log-expression-annotator e)
+        (define (lookup-var args vals var)
+          (let loop ([i 0])
+            (if (< i (length args))
+                (if (equal? (list-ref args i) var)
+                    (list-ref vals i)
+                    (loop (add1 i)))
+                (error 'unbound-var-in-log-behavior-statement))))
+        
+        (define (substitute-val str from to)
+          (if (null? from)
+              str
+              (substitute-val (string-replace str (car from) (car to)) (cdr from) (cdr to))))
+                 
+        (syntax-case e ()
+          [(id) (identifier? #'id)
+           (quasisyntax/loc e (#,add-log (format "~a = ~v" (syntax->datum #'id) id)))] 
+          [(app) (equal? (syntax->datum (car (syntax->list #'app))) '#%app)
+           (let* ([app-lst (syntax->list #'app)]
+                  [fun (cadr app-lst)]
+                  [args (cddr app-lst)]
+                  [fun-name (syntax->datum fun)]
+                  [fun-args (hash-ref args-table fun-name null)]
+                  [v (hash-ref template fun-name #f)])
+             (cond
+               [(identifier? fun)
+                (if v
+                    (let ([template-str (car v)]
+                          [template-at-args (cadr v)]
+                          [template-ret (caddr v)])
+                      (quasisyntax/loc e
+                        (let* ([arg-values (list #,@args)]
+                               [ret-value (format "~v" (apply #,fun arg-values))]
+                               [replaces (map (lambda (a)
+                                                (format "~v" (#,lookup-var (list #,@fun-args) arg-values (string-trim a "@"))))
+                                              (list #,@template-at-args))]
+                               [str (#,substitute-val #,template-str (list #,@template-at-args) replaces)]
+                               [final-str (if #,template-ret (#,string-replace str #,template-ret ret-value) str)])
+                          (#,add-log final-str))))
+                    (quasisyntax/loc e (#,add-log (format "~a = ~v" (syntax->datum #'app) app))))]
+               [else
+                (error 'log-expression-annotator "unknown expr: ~a"
+                       (syntax->datum e))]))]))
+        
       (define (edge-expression-annotator e)
         (syntax-case e ()
           [(from to)
@@ -200,12 +250,8 @@
                                    #,(annotate #'mark bound-vars id-layer id)
                                    #,(annotate #'body bound-vars id-layer id)))]
           
-          ;(x)
-          ;((#%app fact (quote 3)))
-          [(#%plain-app log . d)
-           (begin
-             (printf "log case..d=~v\n" #'d)
-             expr)]
+          [(#%plain-app log . data)
+           (log-expression-annotator #'data)]
           
           [(#%plain-app edge . args)
            (edge-expression-annotator #'args)]

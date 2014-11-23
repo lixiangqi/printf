@@ -1,6 +1,7 @@
 #lang racket
 
-(provide add-edge
+(provide add-log
+         add-edge
          get-raw-edges
          record-timeline
          get-timeline-data)
@@ -10,6 +11,10 @@
 (define timeline-table (make-hash))
 (define sequence null)
 (define timeline-data null)
+
+(define (add-log str)
+  (printf "add-log, str=~a\n" str)
+  (void))
 
 (define (add-edge from to edge-label from-label to-label)
   (when (and (object? from) (object? to))
