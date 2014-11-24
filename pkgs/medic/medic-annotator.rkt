@@ -144,7 +144,7 @@
                  
         (syntax-case e ()
           [(id) (identifier? #'id)
-           (quasisyntax/loc e (#,add-log (format "~a = ~v" (syntax->datum #'id) id)))] 
+           (quasisyntax/loc e (#,add-log (format "~a = ~v" 'id id)))] 
           [(app) (equal? (syntax->datum (car (syntax->list #'app))) '#%app)
            (let* ([app-lst (syntax->list #'app)]
                   [fun (cadr app-lst)]
@@ -167,7 +167,7 @@
                                [str (#,substitute-val #,template-str (list #,@template-at-args) replaces)]
                                [final-str (if #,template-ret (#,string-replace str #,template-ret ret-value) str)])
                           (#,add-log final-str))))
-                    (quasisyntax/loc e (#,add-log (format "~a = ~v" (syntax->datum #'app) app))))]
+                    (quasisyntax/loc e (#,add-log (format "~a = ~v" 'app app))))]
                [else
                 (error 'log-expression-annotator "unknown expr: ~a"
                        (syntax->datum e))]))]))
@@ -202,12 +202,16 @@
         (unless ret
           (set! ret (find-bound-var top-level-ids)))
         ret)
+      
+      (define (get-stamp-id e)
+        (or (syntax-property e 'stamp)
+            (syntax-property (cadr (syntax->list e)) 'stamp)))
           
       (define annotated
         (rearm
          expr
          (kernel:kernel-syntax-case*
-          (disarm expr) #f (log edge timeline assert)
+          (disarm expr) #f (log aggregate edge timeline assert)
           [var-stx (identifier? (syntax var-stx))
                    (if (syntax-property #'var-stx 'medic)
                        (or (find-bound-var/wrap-context #'var-stx bound-vars) expr)
@@ -253,21 +257,24 @@
           [(#%plain-app log . data)
            (log-expression-annotator #'data)]
           
+          [(#%plain-app aggregate v ...)
+           (let ([stamp-id (get-stamp-id expr)])
+             (quasisyntax/loc expr
+               (#,record-aggregate #,stamp-id (list (cons 'v v) ...))))]
+          
           [(#%plain-app edge . args)
            (edge-expression-annotator #'args)]
           
           [(#%plain-app timeline id) (identifier? (syntax id))
-           (let ([timeline-id (or (syntax-property expr 'timeline-id)
-                                  (syntax-property (cadr (syntax->list expr)) 'timeline-id))]
+           (let ([timeline-id (get-stamp-id expr)]
                  [label (format "~a" (syntax-e #'id))])
              (quasisyntax/loc expr
                (#%plain-app #,record-timeline #,timeline-id #,label id #f)))]
           
           [(#%plain-app assert cond)
-           (let* ([timeline-id (or (syntax-property expr 'timeline-id)
-                                  (syntax-property (cadr (syntax->list expr)) 'timeline-id))]
-                  [id (car timeline-id)]
-                  [label (cdr timeline-id)])
+           (let* ([stamp-id (get-stamp-id expr)]
+                  [id (car stamp-id)]
+                  [label (cdr stamp-id)])
              (quasisyntax/loc expr
                (#%plain-app #,record-timeline #,id #,label cond #t)))]
                         

@@ -190,8 +190,8 @@
                             (map (lambda (i)
                                    (if (identifier? i)
                                        (syntax-property (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
-                                                        'timeline-id
-                                                        (syntax-property e 'timeline-id))
+                                                        'stamp
+                                                        (syntax-property e 'stamp))
                                        i))
                                  (syntax->list ele))
                             ele)])
@@ -248,8 +248,8 @@
                          (map (lambda (i) 
                                 (if (identifier? i)
                                     (syntax-property (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
-                                                     'timeline-id
-                                                     (syntax-property exp 'timeline-id))
+                                                     'stamp
+                                                     (syntax-property exp 'stamp))
                                     i)) 
                               (syntax->list body))
                          body))

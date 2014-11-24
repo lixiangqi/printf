@@ -1,6 +1,7 @@
 #lang racket
 
 (provide add-log
+         record-aggregate
          add-edge
          get-raw-edges
          record-timeline
@@ -13,7 +14,11 @@
 (define timeline-data null)
 
 (define (add-log str)
-  (printf "add-log, str=~a\n" str)
+  ;(printf "add-log, str=~a\n" str)
+  (void))
+
+(define (record-aggregate key pairs)
+  (printf "key=~v, pairs=~v\n" key pairs)
   (void))
 
 (define (add-edge from to edge-label from-label to-label)

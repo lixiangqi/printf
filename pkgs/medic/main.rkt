@@ -258,7 +258,7 @@
          (add-at-insert at-struct))]))
   
   (define (interpret-src-expr stx)
-    (syntax-case stx (ref timeline assert)
+    (syntax-case stx (ref aggregate timeline assert)
       [(ref src-id)
        (let* ([id (syntax->datum #'src-id)]
               [exprs (hash-ref src-table id #f)])
@@ -274,17 +274,24 @@
                     (map interpret-src-expr found-expr))
                   (iterate (rest lst))))]))]
       
+      [(aggregate v . vs) (and (identifier? #'v) 
+                               (or (null? (syntax-e #'vs)) (andmap identifier? (syntax-e #'vs))))
+       (begin
+         (set! counter (add1 counter))
+         (syntax-property (syntax-property stx 'layer current-layer-id)
+                          'stamp counter))]
+      
       [(timeline id) (identifier? #'id)
        (begin
          (set! counter (add1 counter))
          (syntax-property (syntax-property stx 'layer current-layer-id)
-                          'timeline-id counter))]
+                          'stamp counter))]
       
       [(assert cond)
        (begin
          (set! counter (add1 counter))
          (syntax-property (syntax-property stx 'layer current-layer-id)
-                          'timeline-id (cons counter (format "~a" (syntax->datum #'cond)))))]
+                          'stamp (cons counter (format "~a" (syntax->datum #'cond)))))]
       
       [else (syntax-property stx 'layer current-layer-id)]))
   

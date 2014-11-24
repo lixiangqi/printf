@@ -8,5 +8,7 @@
            [(fact) [on-entry 
                     (log x)
                     (log y)
+                    (aggregate x)
+                    (aggregate x y)
                     (printf "[debug]layer1 entered.\n")]]
            [on-exit (log (fact (+ 1 2) "yyy"))]))
