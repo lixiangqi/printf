@@ -1,6 +1,7 @@
 #lang racket
 
 (define y 10)
+(define z 2)
 
 (define (fact x y)
   (if (zero? x)

@@ -293,6 +293,11 @@
          (syntax-property (syntax-property stx 'layer current-layer-id)
                           'stamp (cons counter (format "~a" (syntax->datum #'cond)))))]
       
+      [(define (var) expr ...)
+       (quasisyntax/loc stx
+         (define (var)
+           #,@(map interpret-src-expr (syntax->list #'(expr ...)))))]
+      
       [else (syntax-property stx 'layer current-layer-id)]))
   
   (syntax-case stx (begin layer)

@@ -11,7 +11,7 @@
 
   (define (insert-stx stx insert-table at-table)
     
-    (define (convert-stx s) 
+    (define (convert-stx s)
       (let* ([new-stx (strip-context s)]
              [tagged 
               (if (syntax->list new-stx)

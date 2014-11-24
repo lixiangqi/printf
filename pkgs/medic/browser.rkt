@@ -53,6 +53,7 @@
     (send top-right-panel set-percentages (list 1/2 1/2))
     (send top-right-panel end-container-sequence)
     
+    
     (define timeline-data (get-timeline-data))
     (set! timeline-data 
           (list 
@@ -103,10 +104,12 @@
     
     (define log-text (new log-text%))
     
+    (new message% [parent log-panel] [label "Log"])
+    
     (new editor-canvas% 
          [parent log-panel]
          [editor log-text]
-         [style '(auto-hscroll auto-vscroll)])
+         [style '(no-focus auto-hscroll auto-vscroll)])
     
     
     
@@ -120,16 +123,13 @@
           (send timeline-canvas get-actual-height)
           0.0 0.0)
     (send timeline-canvas show-scrollbars #t #t)
+    (new message% [parent graph-panel] [label "Graph"])
     (new editor-canvas%
          [parent graph-panel]
          [editor graph-pb])
-    
+    (new message% [parent aggre-panel] [label "Aggregate"])
     (new editor-canvas%
          [parent aggre-panel])
-      
-    
-         
-         
       
     
     
