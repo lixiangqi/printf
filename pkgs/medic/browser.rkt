@@ -34,22 +34,24 @@
     (init parent)
            
     (super-new)
-    
-    (define split-panel (new panel:vertical-dragable% [parent parent]))
-    (define top-panel (new vertical-panel% [parent split-panel]))
-    (define timeline-panel (new vertical-panel% [parent split-panel]))
-    
-    (define sub-split-panel (new panel:horizontal-dragable% [parent top-panel]))
-    (define log-panel (new vertical-panel% [parent sub-split-panel]))
-    (define graph-panel (new vertical-panel% [parent sub-split-panel]))
+   
+    (define split-panel (new panel:horizontal-dragable% [parent parent]))
+    (define log-panel (new vertical-panel% [parent split-panel]))
+    (define right-panel (new panel:vertical-dragable% [parent split-panel]))
+    (define top-right-panel (new panel:horizontal-dragable% [parent right-panel]))
+    (define graph-panel (new vertical-panel% [parent top-right-panel]))
+    (define aggre-panel (new vertical-panel% [parent top-right-panel]))
+    (define timeline-panel (new vertical-panel% [parent right-panel]))
     
     (send split-panel begin-container-sequence)
-    (send split-panel set-percentages (list 1/2 1/2))
+    (send split-panel set-percentages (list 1/4 3/4))
     (send split-panel end-container-sequence)
-    
-    (send sub-split-panel begin-container-sequence)
-    (send sub-split-panel set-percentages (list 1/2 1/2))
-    (send sub-split-panel end-container-sequence)
+    (send right-panel begin-container-sequence)
+    (send right-panel set-percentages (list 1/2 1/2))
+    (send right-panel end-container-sequence)
+    (send top-right-panel begin-container-sequence)
+    (send top-right-panel set-percentages (list 1/2 1/2))
+    (send top-right-panel end-container-sequence)
     
     (define timeline-data (get-timeline-data))
     (set! timeline-data 
@@ -121,6 +123,9 @@
     (new editor-canvas%
          [parent graph-panel]
          [editor graph-pb])
+    
+    (new editor-canvas%
+         [parent aggre-panel])
       
     
          
