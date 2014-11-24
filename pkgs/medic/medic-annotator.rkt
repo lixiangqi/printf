@@ -4,7 +4,6 @@
            (for-syntax scheme/base)
            (only-in mzscheme [apply plain-apply])
            racket/string
-           "redirect.rkt"
            "visual-util.rkt"
            "visual-lib.rkt")
   (provide annotate-stx)
@@ -124,7 +123,8 @@
                   (arg-list
                    #,@new-bodies)))]))
      
-      (define (log-expression-annotator e)
+      (define (log-expression-annotator e layer-id)
+        (printf "log: e=~v, layer=~v\n" e layer-id)
         (define (lookup-var args vals var)
           (let loop ([i 0])
             (if (< i (length args))
@@ -140,7 +140,7 @@
                  
         (syntax-case e ()
           [(id) (identifier? #'id)
-           (quasisyntax/loc e (#,add-log (format "~a = ~v" 'id id)))] 
+           (quasisyntax/loc e (#,add-log (format "~a = ~v" 'id id) #,layer-id))] 
           [(app) (equal? (syntax->datum (car (syntax->list #'app))) '#%app)
            (let* ([app-lst (syntax->list #'app)]
                   [fun (cadr app-lst)]
@@ -162,8 +162,8 @@
                                               (list #,@template-at-args))]
                                [str (#,substitute-val #,template-str (list #,@template-at-args) replaces)]
                                [final-str (if #,template-ret (#,string-replace str #,template-ret ret-value) str)])
-                          (#,add-log final-str))))
-                    (quasisyntax/loc e (#,add-log (format "~a = ~v" 'app app))))]
+                          (#,add-log final-str #,layer-id))))
+                    (quasisyntax/loc e (#,add-log (format "~a = ~v" 'app app) #,layer-id)))]
                [else
                 (error 'log-expression-annotator "unknown expr: ~a"
                        (syntax->datum e))]))]))
@@ -251,9 +251,8 @@
                                    #,(annotate #'body bound-vars id)))]
           
           [(#%plain-app log . data)
-           (begin expr
-             (printf "expr=~v, log layer-id ...=~v\n" expr (get-syntax-property expr 'layer))
-             (log-expression-annotator #'data))]
+           (begin (log-expression-annotator #'data (get-syntax-property expr 'layer))
+           #'(void))]
           
           [(#%plain-app aggregate v ...)
            (let ([stamp-id (get-syntax-property expr 'stamp)])
@@ -276,24 +275,11 @@
                (#%plain-app #,record-timeline #,id #,label cond #t)))]
                         
           [(#%plain-app . exprs)
-           (begin
-             (define exprs-lst (syntax->list #'exprs))
-             (cond
-               [(equal? (syntax->datum (car exprs-lst)) 'edge)
-                (edge-expression-annotator #'exprs)]
-               [else
-                (define layer #f)
-                (define subexprs (map (lambda (expr) 
-                                    (annotate expr bound-vars id))
-                                  (syntax->list #'exprs)))
-                (define port (set-up-output-port))
-                (if layer
-                    (quasisyntax/loc expr
-                      (parameterize ([current-output-port #,port])
-                        (#%plain-app #,add-layer-id '#,layer)
-                        (#%plain-app . #,subexprs)))
-                    (quasisyntax/loc expr
-                      (#%plain-app . #,subexprs)))]))]
+           (let ([subexprs (map (lambda (expr) 
+                                  (annotate expr bound-vars id))
+                                (syntax->list #'exprs))])
+             (quasisyntax/loc expr
+               (#%plain-app . #,subexprs)))]
           
           [(#%top . var) expr]
           [(#%variable-reference . _) expr]

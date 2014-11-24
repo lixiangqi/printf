@@ -8,23 +8,13 @@
            [(fact) [on-entry 
                     (log x)
                     (log y)
-                    (aggregate x)
-                    (aggregate x y)
-                    (timeline x)
-                    ;(timeline x)
-                    (printf "[debug]layer1 entered.\n")]]
+                    
+                    #;(printf "[debug]layer1 entered.\n")]]
            [on-exit (log (fact (+ 1 2) "yyy"))]))
 
 (layer layer2
        (in #:file "src6.rkt"
-           [on-exit
-            (define (f) 
-              (log z)
-              (timeline y)
-              (timeline z))]
-           [on-exit (log z)
-                    (log y)]
-           [(fact) [on-entry
-                    (log z)
-                    (log x)]]))
-
+           #;[on-exit
+            (define (f) (log z))]
+           [on-exit (log z)]
+           [(fact) [on-entry (log y)]]))

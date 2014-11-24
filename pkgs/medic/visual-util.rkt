@@ -13,12 +13,12 @@
 (define sequence null)
 (define timeline-data null)
 
-(define (add-log str)
-  ;(printf "add-log, str=~a\n" str)
+(define (add-log str layer-id)
+  ;(printf "add-log, str=~a, layer-id\n" str layer-id)
   (void))
 
 (define (record-aggregate key pairs)
-  (printf "key=~v, pairs=~v\n" key pairs)
+  ;(printf "key=~v, pairs=~v\n" key pairs)
   (void))
 
 (define (add-edge from to edge-label from-label to-label)

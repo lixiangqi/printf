@@ -2,13 +2,10 @@
 
 (require "load-annotator.rkt"
          "medic-annotator.rkt"
-         "redirect.rkt"
          "browser.rkt")
 
 (provide medic
-         debug
-         display-layer
-         display-logs)
+         debug)
 
 (define medic-insert-table #f)
 (define medic-at-table #f)
@@ -62,17 +59,6 @@
                               (or (and medic-insert-table (hash-has-key? medic-insert-table fn-str))
                                   (and medic-at-table (hash-has-key? medic-at-table fn-str)))))])
     (eval/annotations mod annotate-module? annotate-stx medic-insert-table medic-at-table medic-template)
-    (process-logs)
-    (make-trace-browser fn)))
-
-(define (display-logs)
-  (for ([l (access-logs)])
-    (printf "~a\n" l)))
-
-(define (display-layer layer)
-  (define logs (access-layer layer))
-  (if (null? logs)
-      (error 'invalid-layer-identifier "display-layer: layer-id = ~a\n" layer)
-      (for ([l logs])
-        (printf "~a\n" l))))
+    ;(process-logs)
+    #;(make-trace-browser fn)))
   
