@@ -59,6 +59,4 @@
                               (or (and medic-insert-table (hash-has-key? medic-insert-table fn-str))
                                   (and medic-at-table (hash-has-key? medic-at-table fn-str)))))])
     (eval/annotations mod annotate-module? annotate-stx medic-insert-table medic-at-table medic-template)
-    ;(process-logs)
-    #;(make-trace-browser fn)))
-  
+    (make-trace-browser fn)))

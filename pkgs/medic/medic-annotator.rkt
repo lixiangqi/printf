@@ -124,7 +124,6 @@
                    #,@new-bodies)))]))
      
       (define (log-expression-annotator e layer-id)
-        (printf "log: e=~v, layer=~v\n" e layer-id)
         (define (lookup-var args vals var)
           (let loop ([i 0])
             (if (< i (length args))
@@ -140,7 +139,7 @@
                  
         (syntax-case e ()
           [(id) (identifier? #'id)
-           (quasisyntax/loc e (#,add-log (format "~a = ~v" 'id id) #,layer-id))] 
+           (quasisyntax/loc e (#,add-log (format "~a = ~v" 'id id) '#,layer-id #f))] 
           [(app) (equal? (syntax->datum (car (syntax->list #'app))) '#%app)
            (let* ([app-lst (syntax->list #'app)]
                   [fun (cadr app-lst)]
@@ -162,8 +161,8 @@
                                               (list #,@template-at-args))]
                                [str (#,substitute-val #,template-str (list #,@template-at-args) replaces)]
                                [final-str (if #,template-ret (#,string-replace str #,template-ret ret-value) str)])
-                          (#,add-log final-str #,layer-id))))
-                    (quasisyntax/loc e (#,add-log (format "~a = ~v" 'app app) #,layer-id)))]
+                          (#,add-log final-str '#,layer-id #t))))
+                    (quasisyntax/loc e (#,add-log (format "~a = ~v" 'app app) '#,layer-id #f)))]
                [else
                 (error 'log-expression-annotator "unknown expr: ~a"
                        (syntax->datum e))]))]))
@@ -251,8 +250,7 @@
                                    #,(annotate #'body bound-vars id)))]
           
           [(#%plain-app log . data)
-           (begin (log-expression-annotator #'data (get-syntax-property expr 'layer))
-           #'(void))]
+           (log-expression-annotator #'data (get-syntax-property expr 'layer))]
           
           [(#%plain-app aggregate v ...)
            (let ([stamp-id (get-syntax-property expr 'stamp)])
