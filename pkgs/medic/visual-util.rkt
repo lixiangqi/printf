@@ -1,12 +1,14 @@
 #lang racket
 
 (provide add-log
+         get-log-data
          record-aggregate
          add-edge
          get-raw-edges
          record-timeline
          get-timeline-data)
 
+(define log-data null)
 (define snip-size 30)
 (define raw-edges (make-hash))
 (define timeline-table (make-hash))
@@ -14,8 +16,9 @@
 (define timeline-data null)
 
 (define (add-log str layer-id behavior?)
-  (printf "add-log, str=~a, layer-id=~v\n" str layer-id)
-  (void))
+  (set! log-data (append log-data (list (list str layer-id behavior?)))))
+
+(define (get-log-data) log-data)
 
 (define (record-aggregate key pairs)
   ;(printf "key=~v, pairs=~v\n" key pairs)

@@ -250,7 +250,7 @@
                                    #,(annotate #'body bound-vars id)))]
           
           [(#%plain-app log . data)
-           (log-expression-annotator #'data (get-syntax-property expr 'layer))]
+           (log-expression-annotator #'data (format "~a" (get-syntax-property expr 'layer)))]
           
           [(#%plain-app aggregate v ...)
            (let ([stamp-id (get-syntax-property expr 'stamp)])

@@ -3,6 +3,9 @@
 (require racket/class
          racket/gui/base
          framework
+         (for-syntax pict)
+         images/compile-time
+         mrlib/switchable-button
          "log-text.rkt"
          "graph-pasteboard.rkt"
          "timeline-canvas.rkt"
@@ -10,7 +13,6 @@
 
 (provide make-trace-browser)
 
-  
 (define (make-trace-browser fn)
   (define frame (new trace-frame% [filename fn]))
   (send frame show #t))
@@ -102,17 +104,60 @@
                           [width graph-width]
                           [height graph-height]))
     
-    (define log-text (new log-text%))
+    (define log-text (new log-text% [data (get-log-data)]))
     
-    (new message% [parent log-panel] [label "Log"])
+    (define layer-data (sort (list "layer1" "layer2" "y" "aa" "cc" "bb") string<=?))
+    
+    (define/private (popup-layer-viewer)
+      (define (on-check-box-value-change c)
+        (printf "check box value=~v, label=~v\n" (send c get-value)
+                (send c get-label)))
+      (define f (new frame% 
+                     [label "Layer Viewer"]
+                     [width 400]
+                     [height 400]))
+      (define main-panel (new vertical-panel% [parent f]))
+      (define check-box-panel (new vertical-panel% [parent main-panel] [alignment '(left top)]))
+      (define items (map (lambda (l) (new check-box% 
+                                          [label l]
+                                          [value #t]
+                                          [parent check-box-panel]
+                                          [callback (lambda (c e) (on-check-box-value-change c))]))
+                         layer-data))
+      
+      
+      (define button-panel (new horizontal-panel% 
+                                [parent main-panel]
+                                [stretchable-width #f]
+                                [stretchable-height #f]))
+      (new button% 
+           [label "Select All"] 
+           [parent button-panel])
+     
+      (new button% 
+           [label "Deselect All"] 
+           [parent button-panel])
+      
+      (send f show #t))
+    
+    
+    (define medic-bitmap 
+      (compiled-bitmap (pict->bitmap (cc-superimpose (colorize (filled-rectangle 18 6) "red")
+                                                     (colorize (filled-rectangle 6 18) "red")))))
+                                           
+    (new switchable-button%
+         [label "Log Viewer"]
+         [bitmap medic-bitmap]
+         [min-width-includes-label? #t]
+         [vertical-tight? #t]
+         [parent log-panel]
+         [callback (lambda (b) (popup-layer-viewer))])
     
     (new editor-canvas% 
          [parent log-panel]
          [editor log-text]
          [style '(no-focus auto-hscroll auto-vscroll)])
-    
-    
-    
+  
     (define timeline-canvas (new timeline-canvas%
                                  [data timeline-data]
                                  [parent timeline-panel]
