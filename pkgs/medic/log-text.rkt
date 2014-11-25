@@ -10,7 +10,7 @@
     (inherit insert
              begin-edit-sequence
              end-edit-sequence
-             get-position
+             get-position last-position
              change-style)
     
     (define layer-position (make-hash))
@@ -59,6 +59,9 @@
     
     (define/public (unhighlight-layer layer)
       (change-layer-style layer unhighlight-style))
+    
+    (define/public (highlight-all-text) (change-style highlight-style 0 (last-position)))
+    (define/public (unhighlight-all-text) (change-style unhighlight-style 0 (last-position)))
     
     (define/public (get-layers) layers)
     

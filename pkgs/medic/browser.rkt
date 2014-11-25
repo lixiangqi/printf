@@ -112,6 +112,12 @@
         (if (send c get-value)
             (send log-text highlight-layer label)
             (send log-text unhighlight-layer label)))
+      (define (handle-select-all boxes)
+        (for-each (lambda (b) (send b set-value #t)) boxes)
+        (send log-text highlight-all-text))
+      (define (handle-deselect-all boxes)
+        (for-each (lambda (b) (send b set-value #f)) boxes)
+        (send log-text unhighlight-all-text))
       
       (define f (new frame% 
                      [label "Layer Viewer"]
@@ -124,19 +130,18 @@
                                           [parent check-box-panel]
                                           [callback (lambda (c e) (on-check-box-value-change c))]))
                          (send log-text get-layers)))
-      
       (define button-panel (new horizontal-panel% 
                                 [parent main-panel]
                                 [stretchable-width #f]
                                 [stretchable-height #f]))
       (new button% 
            [label "Select All"] 
-           [parent button-panel])
-     
+           [parent button-panel]
+           [callback (lambda (c e) (handle-select-all items))])
       (new button% 
            [label "Deselect All"] 
-           [parent button-panel])
-      
+           [parent button-panel]
+           [callback (lambda (c e) (handle-deselect-all items))])
       (send f show #t))
     
     
