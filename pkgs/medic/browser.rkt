@@ -106,12 +106,13 @@
     
     (define log-text (new log-text% [data (get-log-data)]))
     
-    (define layer-data (sort (list "layer1" "layer2" "y" "aa" "cc" "bb") string<=?))
-    
     (define/private (popup-layer-viewer)
       (define (on-check-box-value-change c)
-        (printf "check box value=~v, label=~v\n" (send c get-value)
-                (send c get-label)))
+        (define label (send c get-label))
+        (if (send c get-value)
+            (send log-text highlight-layer label)
+            (send log-text unhighlight-layer label)))
+      
       (define f (new frame% 
                      [label "Layer Viewer"]
                      [width 400]
@@ -120,11 +121,9 @@
       (define check-box-panel (new vertical-panel% [parent main-panel] [alignment '(left top)]))
       (define items (map (lambda (l) (new check-box% 
                                           [label l]
-                                          [value #t]
                                           [parent check-box-panel]
                                           [callback (lambda (c e) (on-check-box-value-change c))]))
-                         layer-data))
-      
+                         (send log-text get-layers)))
       
       (define button-panel (new horizontal-panel% 
                                 [parent main-panel]

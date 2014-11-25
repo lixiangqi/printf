@@ -12,12 +12,17 @@
              end-edit-sequence
              get-position
              change-style)
-    (super-new)
     
     (define layer-position (make-hash))
+    (define layers (sort (remove-duplicates	(map second data)) string<=?))
     
     (define behavior-style (new style-delta%))
     (send behavior-style set-delta-foreground "DodgerBlue")
+    
+    (define highlight-style (new style-delta%))
+    (send highlight-style set-delta-background "Yellow")
+    (define unhighlight-style (new style-delta%))
+    (send unhighlight-style set-delta-background "White")
     
     (define/private (display-logs)
       (define current-pos (box #f))
@@ -40,4 +45,22 @@
            (change-style behavior-style start-pos end-pos #f)))
        data)
       (end-edit-sequence))
+    
+    (define/private (change-layer-style layer style)
+      (define ranges (hash-ref layer-position layer null))
+      (begin-edit-sequence)
+      (for-each (lambda (p)
+                  (change-style style (car p) (cdr p) #f))
+                ranges)
+      (end-edit-sequence))
+    
+    (define/public (highlight-layer layer) 
+      (change-layer-style layer highlight-style))
+    
+    (define/public (unhighlight-layer layer)
+      (change-layer-style layer unhighlight-style))
+    
+    (define/public (get-layers) layers)
+    
+    (super-new)
     (display-logs)))
