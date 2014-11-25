@@ -73,7 +73,9 @@
       (unless (null? inserts)
         (for-each (lambda (entry)
                     (when (equal? (car entry) loc)
-                      (set! result-stx (append (map convert-stx (cdr entry)) result-stx))))
+                      (if (equal? loc 'entry)
+                          (set! result-stx (append (map convert-stx (cdr entry)) result-stx))
+                          (set! result-stx (append result-stx (map convert-stx (cdr entry)))))))
                   inserts))
       result-stx)
     
