@@ -28,19 +28,34 @@
 
 (define scrub-snip%
   (class image-snip%
-    (super-new)
+    ;(init-field [series null])
+    
+    (define scrub-pasteboard%
+      (class pasteboard%
+        (super-new)))
     
     (define/override (adjust-cursor dc x y editorx editory event)
       (make-object cursor% 'arrow))
    
     (define/override (on-event dc x y editorx editory event)
       (when (send event button-down? 'left)
-        (define f (new frame%
-                       [label "Scrub View"]
-                       [width 400]
-                       [height 400]))
-        (send f show #t))
-      (super on-event dc x y editorx editory event))))
+        (unless (send scrub-frame is-shown?)
+          (send scrub-frame show #t)))
+      (super on-event dc x y editorx editory event))
+    
+    (super-new)
+    
+    (define scrub-frame (new frame%
+                             [label "Scrub View"]
+                             [width 400]
+                             [height 400]))
+    (define scrub-pb (new scrub-pasteboard%))
+    (new editor-canvas%
+         [parent scrub-frame]
+         [editor scrub-pb])
+    
+    
+    ))
 
 (define aggregate-editor%
   (class text%

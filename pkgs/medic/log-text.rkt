@@ -54,14 +54,21 @@
                 ranges)
       (end-edit-sequence))
     
-    (define/public (highlight-layer layer) 
+    (define/public (highlight-layer layer)
       (change-layer-style layer highlight-style))
     
     (define/public (unhighlight-layer layer)
       (change-layer-style layer unhighlight-style))
     
-    (define/public (highlight-all-text) (change-style highlight-style 0 (last-position)))
-    (define/public (unhighlight-all-text) (change-style unhighlight-style 0 (last-position)))
+    (define/public (highlight-all-text) 
+      (begin-edit-sequence)
+      (change-style highlight-style 0 (last-position))
+      (end-edit-sequence))
+    
+    (define/public (unhighlight-all-text) 
+      (begin-edit-sequence)
+      (change-style unhighlight-style 0 (last-position))
+      (end-edit-sequence))
     
     (define/public (get-layers) layers)
     

@@ -107,44 +107,47 @@
     
     (define log-text (new log-text% [data (get-log-data)]))
     
-    (define/private (popup-layer-viewer)
-      (define (on-check-box-value-change c)
-        (define label (send c get-label))
-        (if (send c get-value)
-            (send log-text highlight-layer label)
-            (send log-text unhighlight-layer label)))
-      (define (handle-select-all boxes)
-        (for-each (lambda (b) (send b set-value #t)) boxes)
-        (send log-text highlight-all-text))
-      (define (handle-deselect-all boxes)
-        (for-each (lambda (b) (send b set-value #f)) boxes)
-        (send log-text unhighlight-all-text))
-      
-      (define f (new frame% 
-                     [label "Layer Viewer"]
-                     [width 400]
-                     [height 400]))
-      (define main-panel (new vertical-panel% [parent f]))
-      (define check-box-panel (new vertical-panel% [parent main-panel] [alignment '(left top)]))
-      (define items (map (lambda (l) (new check-box% 
-                                          [label l]
-                                          [parent check-box-panel]
-                                          [callback (lambda (c e) (on-check-box-value-change c))]))
-                         (send log-text get-layers)))
-      (define button-panel (new horizontal-panel% 
-                                [parent main-panel]
-                                [stretchable-width #f]
-                                [stretchable-height #f]))
-      (new button% 
-           [label "Select All"] 
-           [parent button-panel]
-           [callback (lambda (c e) (handle-select-all items))])
-      (new button% 
-           [label "Deselect All"] 
-           [parent button-panel]
-           [callback (lambda (c e) (handle-deselect-all items))])
-      (send f show #t))
+    (define/private (on-check-box-value-change c)
+      (define label (send c get-label))
+      (if (send c get-value)
+          (send log-text highlight-layer label)
+          (send log-text unhighlight-layer label)))
     
+    (define/private (handle-select-all boxes)
+      (for-each (lambda (b) (send b set-value #t)) boxes)
+      (send log-text highlight-all-text))
+    
+    (define/private (handle-deselect-all boxes)
+      (for-each (lambda (b) (send b set-value #f)) boxes)
+      (send log-text unhighlight-all-text))
+    
+    (define f (new frame% 
+                   [label "Layer Viewer"]
+                   [width 400]
+                   [height 400]))
+    (define main-panel (new vertical-panel% [parent f]))
+    (define check-box-panel (new vertical-panel% [parent main-panel] [alignment '(left top)]))
+    (define items (map (lambda (l) (new check-box% 
+                                        [label l]
+                                        [parent check-box-panel]
+                                        [callback (lambda (c e) (on-check-box-value-change c))]))
+                       (send log-text get-layers)))
+    (define button-panel (new horizontal-panel% 
+                              [parent main-panel]
+                              [stretchable-width #f]
+                              [stretchable-height #f]))
+    (new button% 
+         [label "Select All"] 
+         [parent button-panel]
+         [callback (lambda (c e) (handle-select-all items))])
+    (new button% 
+         [label "Deselect All"] 
+         [parent button-panel]
+         [callback (lambda (c e) (handle-deselect-all items))])
+    
+    (define/private (popup-layer-viewer)
+      (unless (send f is-shown?)
+        (send f show #t)))
     
     (define medic-bitmap 
       (compiled-bitmap (pict->bitmap (cc-superimpose (colorize (filled-rectangle 18 6) "red")
