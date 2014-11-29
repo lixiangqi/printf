@@ -7,6 +7,7 @@
          images/compile-time
          mrlib/switchable-button
          "log-text.rkt"
+         "aggregate-editor.rkt"
          "graph-pasteboard.rkt"
          "timeline-canvas.rkt"
          "visual-util.rkt")
@@ -161,8 +162,7 @@
          [parent log-panel]
          [editor log-text]
          [style '(no-focus auto-hscroll auto-vscroll)])
-    (printf "aggregate data=~v\n" (get-aggregate-data))
-  
+    
     (define timeline-canvas (new timeline-canvas%
                                  [data timeline-data]
                                  [parent timeline-panel]
@@ -178,8 +178,11 @@
          [parent graph-panel]
          [editor graph-pb])
     (new message% [parent aggre-panel] [label "Aggregate"])
+    
+    (define aggre-text (new aggregate-editor% [data (get-aggregate-data)]))
     (new editor-canvas%
-         [parent aggre-panel])
+         [parent aggre-panel]
+         [editor aggre-text])
       
     
     
