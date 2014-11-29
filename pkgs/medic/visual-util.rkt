@@ -3,6 +3,7 @@
 (provide add-log
          get-log-data
          record-aggregate
+         get-aggregate-data
          add-edge
          get-raw-edges
          record-timeline
@@ -12,8 +13,10 @@
 (define snip-size 30)
 (define raw-edges (make-hash))
 (define timeline-table (make-hash))
-(define sequence null)
+(define timeline-sequence null)
 (define timeline-data null)
+(define aggre-table (make-hash))
+(define aggre-sequence null)
 
 (define (add-log str layer-id behavior?)
   (set! log-data (append log-data (list (list str layer-id behavior?)))))
@@ -21,8 +24,12 @@
 (define (get-log-data) log-data)
 
 (define (record-aggregate key pairs)
-  ;(printf "key=~v, pairs=~v\n" key pairs)
-  (void))
+  (cond
+    [(hash-has-key? aggre-table key)
+     (hash-set! aggre-table key (append (hash-ref aggre-table key) (list pairs)))]
+    [else
+     (set! aggre-sequence (append aggre-sequence (list key)))
+     (hash-set! aggre-table key (list pairs))]))
 
 (define (add-edge from to edge-label from-label to-label)
   (when (and (object? from) (object? to))
@@ -35,7 +42,7 @@
     [(hash-has-key? timeline-table key)
      (hash-set! timeline-table key (append (hash-ref timeline-table key) (list (list label value assert?))))]
     [else
-     (set! sequence (append sequence (list key)))
+     (set! timeline-sequence (append timeline-sequence (list key)))
      (hash-set! timeline-table key (list (list label value assert?)))]))
 
 (define (get-timeline-data)
@@ -43,7 +50,7 @@
   (for-each
    (lambda (n)
      (set! temp (append temp (list (hash-ref timeline-table n)))))
-   sequence)
+   timeline-sequence)
   (for-each 
    (lambda (l)
      (let ([label (first (first l))]
@@ -51,8 +58,11 @@
            [assert? (third (first l))])
        (set! timeline-data (append timeline-data (list (list label assert? values))))))
    temp)
-  (set! sequence null)
+  (set! timeline-sequence null)
   (set! timeline-table #f)
   timeline-data)
 
+(define (get-aggregate-data)
+  (map (lambda (n) (hash-ref aggre-table n)) aggre-sequence))
+  
   

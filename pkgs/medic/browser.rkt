@@ -161,6 +161,7 @@
          [parent log-panel]
          [editor log-text]
          [style '(no-focus auto-hscroll auto-vscroll)])
+    (printf "aggregate data=~v\n" (get-aggregate-data))
   
     (define timeline-canvas (new timeline-canvas%
                                  [data timeline-data]
