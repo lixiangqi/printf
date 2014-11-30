@@ -28,11 +28,90 @@
 
 (define scrub-snip%
   (class image-snip%
-    ;(init-field [series null])
+    (field [series null]
+           [frame-width 400]
+           [frame-height 400])
     
-    (define scrub-pasteboard%
-      (class pasteboard%
-        (super-new)))
+    (define/private (make-slider-bitmap)
+      (define width 100)
+      (define height 20)
+      (define bm (make-object bitmap% width height #f #t))
+      (define bm-dc (new bitmap-dc% [bitmap bm]))
+      (send bm-dc set-pen (send the-pen-list find-or-create-pen "LightGray" 0 'solid))
+      (send bm-dc set-brush (send the-brush-list find-or-create-brush "LightGray" 'solid))
+      (send bm-dc draw-rounded-rectangle 0 0 width height)
+      bm)
+    
+    (define scrub-slider%
+      (class canvas%
+        (inherit get-dc
+                 refresh
+                 get-parent)
+        (super-new)
+        
+        (define slider-color "LightGray")
+        (define thumb1-color "Orange")
+        (define thumb2-color "Green")
+        (define thumb1-dark-color "Sienna")
+        (define thumb2-dark-color "DarkGreen")
+        
+        (define margin-space 10)
+        (define rect-height 6)
+        (define diameter 16)
+        (define radius (/ diameter 2))
+        (define thumb-top-y (- margin-space (- radius (/ rect-height 2))))
+        (define thumb-bottom-y (+ thumb-top-y diameter))
+        (define thumb1-left-x margin-space)
+        (define thumb1-right-x (+ thumb1-left-x diameter))
+        (define thumb2-left-x margin-space)
+        (define thumb2-right-x thumb1-right-x)
+        
+        (define top-thumb 'thumb2)
+        (define flag #f)
+        
+        (define/override (on-paint)
+          (define dc (get-dc))
+          (define frame-width (send (get-parent) get-width))
+          (define rect-width (- frame-width (+ margin-space margin-space)))
+          (send dc set-pen (send the-pen-list find-or-create-pen slider-color 0 'solid))
+          (send dc set-brush (send the-brush-list find-or-create-brush slider-color 'solid))
+          (send dc draw-rounded-rectangle margin-space margin-space rect-width rect-height)
+          
+          (send dc set-pen (send the-pen-list find-or-create-pen thumb1-color 0 'solid))
+          (send dc set-brush (send the-brush-list find-or-create-brush thumb1-color 'solid))
+          (send dc draw-ellipse thumb1-left-x thumb-top-y diameter diameter)
+          
+          (send dc set-pen (send the-pen-list find-or-create-pen thumb2-color 0 'solid))
+          (send dc set-brush (send the-brush-list find-or-create-brush thumb2-color 'solid))
+          (send dc draw-ellipse thumb2-left-x thumb-top-y diameter diameter)
+          )
+        
+        (define/private (on-thumb1? x y)
+          (and (>= x thumb1-left-x) (<= x thumb1-right-x)
+               (>= y thumb-top-y) (<= y thumb-bottom-y)))
+        
+        (define/private (on-thumb2? x y)
+          (and (>= x thumb2-left-x) (<= x thumb2-right-x)
+               (>= y thumb-top-y) (<= y thumb-bottom-y)))
+        
+          ; override on-size
+        (define/override (on-event event)
+          (define mouse-x (send event get-x))
+          (define mouse-y (send event get-y))
+          (cond
+            [(and (send event button-down? 'left)
+                  (on-thumb2? mouse-x mouse-y)); use top-thumb
+             (set! flag #t)]
+            [(and flag (send event dragging?))
+             (set! thumb2-left-x (- mouse-x radius))
+             (set! thumb2-right-x (+ thumb2-left-x diameter))
+             (refresh)]
+            [(and flag (send event button-up? 'left))
+             (set! flag #f)]
+            
+            ))))
+    
+    (define/public (initialize-series s) (set! series s))
     
     (define/override (adjust-cursor dc x y editorx editory event)
       (make-object cursor% 'arrow))
@@ -47,12 +126,14 @@
     
     (define scrub-frame (new frame%
                              [label "Scrub View"]
-                             [width 400]
-                             [height 400]))
-    (define scrub-pb (new scrub-pasteboard%))
-    (new editor-canvas%
-         [parent scrub-frame]
-         [editor scrub-pb])
+                             [width frame-width]
+                             [height frame-height]))
+    (define main-panel (new vertical-panel% [parent scrub-frame]))
+    (new editor-canvas% 
+         [parent main-panel]
+         [editor (new text%)])
+    (new scrub-slider% [parent main-panel])
+    
     
     
     ))
@@ -73,6 +154,7 @@
       (for-each
        (lambda (l)
          (define scrub (make-object scrub-snip% scrub-icon))
+         (send scrub initialize-series l)
          (send scrub set-flags (list 'handles-all-mouse-events))
          (insert scrub)
          (insert " ")
