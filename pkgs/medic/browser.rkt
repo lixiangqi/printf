@@ -121,33 +121,38 @@
       (for-each (lambda (b) (send b set-value #f)) boxes)
       (send log-text unhighlight-all-text))
     
-    (define f (new frame% 
-                   [label "Layer Viewer"]
-                   [width 400]
-                   [height 400]))
-    (define main-panel (new vertical-panel% [parent f]))
-    (define check-box-panel (new vertical-panel% [parent main-panel] [alignment '(left top)]))
-    (define items (map (lambda (l) (new check-box% 
-                                        [label l]
-                                        [parent check-box-panel]
-                                        [callback (lambda (c e) (on-check-box-value-change c))]))
-                       (send log-text get-layers)))
-    (define button-panel (new horizontal-panel% 
-                              [parent main-panel]
-                              [stretchable-width #f]
-                              [stretchable-height #f]))
-    (new button% 
-         [label "Select All"] 
-         [parent button-panel]
-         [callback (lambda (c e) (handle-select-all items))])
-    (new button% 
-         [label "Deselect All"] 
-         [parent button-panel]
-         [callback (lambda (c e) (handle-deselect-all items))])
+    (define layer-frame #f)
+    (define layer-panel #f)
+    
+    (define (initialize-layer-frame)
+      (set! layer-frame (new frame% 
+                             [label "Layer Viewer"]
+                             [width 400]
+                             [height 400]))
+      (set! layer-panel (new vertical-panel% [parent layer-frame]))
+      (define check-box-panel (new vertical-panel% [parent layer-panel] [alignment '(left top)]))
+      (define items (map (lambda (l) (new check-box% 
+                                          [label l]
+                                          [parent check-box-panel]
+                                          [callback (lambda (c e) (on-check-box-value-change c))]))
+                         (send log-text get-layers)))
+      (define button-panel (new horizontal-panel% 
+                                [parent layer-panel]
+                                [stretchable-width #f]
+                                [stretchable-height #f]))
+      (new button% 
+           [label "Select All"] 
+           [parent button-panel]
+           [callback (lambda (c e) (handle-select-all items))])
+      (new button% 
+           [label "Deselect All"] 
+           [parent button-panel]
+           [callback (lambda (c e) (handle-deselect-all items))]))
     
     (define/private (popup-layer-viewer)
-      (unless (send f is-shown?)
-        (send f show #t)))
+      (unless layer-frame (initialize-layer-frame))
+      (unless (send layer-frame is-shown?)
+        (send layer-frame show #t)))
     
     (define medic-bitmap 
       (compiled-bitmap (pict->bitmap (cc-superimpose (colorize (filled-rectangle 18 6) "red")
