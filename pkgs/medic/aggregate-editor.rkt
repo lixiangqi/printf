@@ -27,6 +27,10 @@
    (bitmap-render-icon 
     (pict->bitmap (colorize (filled-ellipse 20 20) "tomato")) 0 glass-icon-material)))
 
+(define (data-list->string l)
+  (define items (map (lambda (p) (format "~a = ~v" (car p) (cdr p))) l))
+  (apply string-append (add-between items "\n")))
+
 (define scrub-snip%
   (class image-snip%
     (field [series null]
@@ -38,7 +42,50 @@
     (define scrub-text #f)
     (define scrub-slider #f)
     
-    (define/public (initialize-series s) (printf "s=~v\n" s) (set! series s))
+    (define scrub-text%
+      (class text%
+        (inherit insert
+                 delete
+                 last-position
+                 begin-edit-sequence
+                 end-edit-sequence)
+        (super-new)
+        
+        (define/public (initialize)
+          (define v (list-ref series 0))
+          (begin-edit-sequence)
+          (insert (data-list->string v))
+          (end-edit-sequence))
+        
+        (define/private (convert-to-string l)
+          (define items (map (lambda (p) 
+                               (if (first p)
+                                   (format "*~a = ~v" (car (second p)) (cdr (second p)))
+                                   (format "~a = ~v" (car (second p)) (cdr (second p)))))
+                               l))
+          (apply string-append (add-between items "\n")))
+        
+        (define/public (display-current-trace i compare-point)
+          (define v (list-ref series i))
+          (define background-color #f)
+          (define to-insert null)
+          (when compare-point
+            (define compare-v (list-ref series compare-point))
+            (for-each (lambda (compare-e e)
+                        (if (equal? compare-e e)
+                            (set! to-insert (append to-insert (list (list #f e))))
+                            (set! to-insert (append to-insert (list (list #t e))))))
+                      compare-v v))
+          (define str (if (null? to-insert) 
+                          (data-list->string v)
+                          (convert-to-string to-insert)))
+          (begin-edit-sequence)
+          (delete 0 (last-position))
+          (insert str)
+          (end-edit-sequence))
+        (initialize)))
+    
+    (define/public (initialize-series s) (set! series s))
     
     (define/override (adjust-cursor dc x y editorx editory event)
       (make-object cursor% 'arrow))
@@ -49,13 +96,16 @@
                              [width frame-width]
                              [height frame-height]))
       (set! main-panel (new vertical-panel% [parent scrub-frame]))
-      (set! scrub-text (new text%))
+      (set! scrub-text (new scrub-text%))
       (new editor-canvas%
            [parent main-panel]
            [editor scrub-text])
       (set! scrub-slider (new scrub-slider% 
-                              [step (length series)] 
-                              [frame-width frame-width] 
+                              [text scrub-text]
+                              [step (sub1 (length series))] 
+                              [frame-width frame-width]
+                              [min-height 42]
+                              [stretchable-height #f]
                               [parent main-panel])))
    
     (define/override (on-event dc x y editorx editory event)
@@ -74,19 +124,16 @@
              begin-edit-sequence
              end-edit-sequence)
     
-    (define/private (data-list->string l)
-      (define items (map (lambda (p) (format "~a = ~v" (car p) (cdr p))) l))
-      (apply string-append (add-between items "\n")))
-    
     (define/private (display-aggregate-traces)
       (begin-edit-sequence)
       (for-each
        (lambda (l)
-         (define scrub (make-object scrub-snip% scrub-icon))
-         (send scrub initialize-series l)
-         (send scrub set-flags (list 'handles-all-mouse-events))
-         (insert scrub)
-         (insert " ")
+         (unless (= (length l) 1)
+           (define scrub (make-object scrub-snip% scrub-icon))
+           (send scrub initialize-series l)
+           (send scrub set-flags (list 'handles-all-mouse-events))
+           (insert scrub)
+           (insert " "))
          (for-each (lambda (s)
                      (let* ([text (new text%)]
                             [snip (new aggregate-snip% [editor text])])

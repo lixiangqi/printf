@@ -15,5 +15,5 @@
        (in #:file "src6.rkt"
            [on-exit (log z)
                     (aggregate y z)
-                    (log (fact 5 "layer2"))]
+                    (log (fact 7 "layer2"))]
            [(fact) [on-entry (log y)]]))
