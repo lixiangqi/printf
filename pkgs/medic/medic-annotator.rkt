@@ -165,7 +165,9 @@
                     (quasisyntax/loc e (#,add-log (format "~a = ~v" 'app app) '#,layer-id #f)))]
                [else
                 (error 'log-expression-annotator "unknown expr: ~a"
-                       (syntax->datum e))]))]))
+                       (syntax->datum e))]))]
+          [(other-exp)
+           (quasisyntax/loc e (#,add-log (format "~v" other-exp) '#,layer-id #f))]))
         
       (define (edge-expression-annotator e)
         (syntax-case e ()
@@ -207,7 +209,7 @@
          expr
          (kernel:kernel-syntax-case*
           (disarm expr) #f (log aggregate edge timeline assert)
-          [var-stx (identifier? (syntax var-stx))
+          [var-stx (identifier? (syntax var-stx)) 
                    (if (syntax-property #'var-stx 'medic)
                        (or (find-bound-var/wrap-context #'var-stx bound-vars) expr)
                        expr)]
@@ -260,7 +262,7 @@
           [(#%plain-app edge . args)
            (edge-expression-annotator #'args)]
           
-          [(#%plain-app timeline id) (identifier? (syntax id))
+          [(#%plain-app timeline id)
            (let ([timeline-id (get-syntax-property expr 'stamp)])
              (quasisyntax/loc expr
                (#%plain-app #,record-timeline #,timeline-id 'id id #f)))]

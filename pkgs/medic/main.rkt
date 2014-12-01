@@ -275,14 +275,13 @@
                     (map interpret-src-expr found-expr))
                   (iterate (rest lst))))]))]
       
-      [(aggregate v . vs) (and (identifier? #'v) 
-                               (or (null? (syntax-e #'vs)) (andmap identifier? (syntax-e #'vs))))
+      [(aggregate v . vs) 
        (begin
          (set! counter (add1 counter))
          (syntax-property (syntax-property stx 'layer current-layer-id)
                           'stamp counter))]
       
-      [(timeline id) (identifier? #'id)
+      [(timeline id)
        (begin
          (set! counter (add1 counter))
          (syntax-property (syntax-property stx 'layer current-layer-id)

@@ -38,12 +38,13 @@
 (define (get-raw-edges) raw-edges)
 
 (define (record-timeline key label value assert?)
+  (define label-str (format "~a" label))
   (cond
     [(hash-has-key? timeline-table key)
-     (hash-set! timeline-table key (append (hash-ref timeline-table key) (list (list label value assert?))))]
+     (hash-set! timeline-table key (append (hash-ref timeline-table key) (list (list label-str value assert?))))]
     [else
      (set! timeline-sequence (append timeline-sequence (list key)))
-     (hash-set! timeline-table key (list (list label value assert?)))]))
+     (hash-set! timeline-table key (list (list label-str value assert?)))]))
 
 (define (get-timeline-data)
   (define temp null)

@@ -4,7 +4,8 @@
          aggregate
          edge
          timeline
-         assert)
+         assert
+         changed?)
 
 (define (log datum) (void))
 
@@ -15,3 +16,5 @@
 (define (timeline id) (void))
 
 (define (assert cond) (void))
+
+(define (changed? id) (void))
