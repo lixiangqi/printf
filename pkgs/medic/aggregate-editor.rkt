@@ -42,11 +42,15 @@
     (define scrub-text #f)
     (define scrub-slider #f)
     
+    (define changed-style (new style-delta%))
+    (send changed-style set-delta-background "MistyRose")
+    
     (define scrub-text%
       (class text%
         (inherit insert
                  delete
                  last-position
+                 change-style
                  begin-edit-sequence
                  end-edit-sequence)
         (super-new)
@@ -69,19 +73,27 @@
           (define v (list-ref series i))
           (define background-color #f)
           (define to-insert null)
-          (when compare-point
-            (define compare-v (list-ref series compare-point))
-            (for-each (lambda (compare-e e)
-                        (if (equal? compare-e e)
-                            (set! to-insert (append to-insert (list (list #f e))))
-                            (set! to-insert (append to-insert (list (list #t e))))))
-                      compare-v v))
-          (define str (if (null? to-insert) 
-                          (data-list->string v)
-                          (convert-to-string to-insert)))
           (begin-edit-sequence)
           (delete 0 (last-position))
-          (insert str)
+          (cond
+            [compare-point
+             (define compare-v (list-ref series compare-point))
+             (for-each (lambda (compare-e e)
+                         (if (equal? compare-e e)
+                             (set! to-insert (append to-insert (list (list #f e))))
+                             (set! to-insert (append to-insert (list (list #t e))))))
+                       compare-v v)
+             (for-each (lambda (p)
+                         (cond 
+                           [(first p)
+                            (define start-pos (last-position))
+                            (insert (format "~a = ~v\n" (car (second p)) (cdr (second p))))
+                            (define end-pos (sub1 (last-position)))
+                            (change-style changed-style start-pos end-pos)]
+                           [else
+                            (insert (format "~a = ~v\n" (car (second p)) (cdr (second p))))]))
+                       to-insert)]
+            [else (insert (data-list->string v))])
           (end-edit-sequence))
         (initialize)))
     
