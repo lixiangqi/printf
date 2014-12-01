@@ -49,6 +49,7 @@
       (class text%
         (inherit insert
                  delete
+                 lock
                  last-position
                  change-style
                  begin-edit-sequence
@@ -57,22 +58,17 @@
         
         (define/public (initialize)
           (define v (list-ref series 0))
+          (lock #f)
           (begin-edit-sequence)
           (insert (data-list->string v))
-          (end-edit-sequence))
-        
-        (define/private (convert-to-string l)
-          (define items (map (lambda (p) 
-                               (if (first p)
-                                   (format "*~a = ~v" (car (second p)) (cdr (second p)))
-                                   (format "~a = ~v" (car (second p)) (cdr (second p)))))
-                               l))
-          (apply string-append (add-between items "\n")))
+          (end-edit-sequence)
+          (lock #t))
         
         (define/public (display-current-trace i compare-point)
           (define v (list-ref series i))
           (define background-color #f)
           (define to-insert null)
+          (lock #f)
           (begin-edit-sequence)
           (delete 0 (last-position))
           (cond
@@ -94,7 +90,8 @@
                             (insert (format "~a = ~v\n" (car (second p)) (cdr (second p))))]))
                        to-insert)]
             [else (insert (data-list->string v))])
-          (end-edit-sequence))
+          (end-edit-sequence)
+          (lock #t))
         (initialize)))
     
     (define/public (initialize-series s) (set! series s))
@@ -132,7 +129,7 @@
 (define aggregate-editor%
   (class text%
     (init-field [data null])
-    (inherit insert 
+    (inherit insert lock
              begin-edit-sequence
              end-edit-sequence)
     
@@ -155,7 +152,8 @@
                    l)
          (insert "\n\n"))
        data)
-      (end-edit-sequence))
+      (end-edit-sequence)
+      (lock #t))
     
     (super-new)
     (display-aggregate-traces)))

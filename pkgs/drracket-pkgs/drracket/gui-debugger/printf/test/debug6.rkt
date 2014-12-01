@@ -13,6 +13,22 @@
 
 (layer layer2
        (in #:file "src6.rkt"
+           [on-entry
+            (define (g) (void))
+            (define test%
+              (class object%
+                (super-new)))
+            (define a (new test%))
+            (define b (new test%))
+            (define c (new test%))
+            (define d (new test%))
+            (define e (new test%))
+            (define f (new test%))
+            (edge a b "ab" "" "")
+            (edge b c "bc" "" "")
+            (edge b d "bd" "" "")
+            (edge b e "be" "" "")
+            (edge b f "bf" "" "")]
            [on-exit (log z)
                     (aggregate y z)
                     (log (fact 7 "layer2"))]

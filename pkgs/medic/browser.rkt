@@ -185,14 +185,11 @@
     (new editor-canvas%
          [parent graph-panel]
          [editor graph-pb])
+    
     (new message% [parent aggre-panel] [label "Aggregate"])
     
     (define aggre-text (new aggregate-editor% [data (get-aggregate-data)]))
     (new editor-canvas%
          [parent aggre-panel]
-         [editor aggre-text])
-      
-    
-    
-    ))
+         [editor aggre-text])))
     

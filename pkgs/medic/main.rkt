@@ -3,6 +3,7 @@
 (require "medic-structs.rkt")
 
 (provide (rename-out [module-begin #%module-begin])
+         define
          #%top-interaction)
 
 
