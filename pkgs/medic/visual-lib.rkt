@@ -13,8 +13,8 @@
 
 (define (edge from-node to-node [edge-label #f] [from-label #f] [to-label #f]) (void))
 
-(define (timeline id) (void))
+(define (timeline e) (void))
 
 (define (assert cond) (void))
 
-(define (changed? id) (void))
+(define (changed? e) (void))

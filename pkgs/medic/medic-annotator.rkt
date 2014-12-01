@@ -208,7 +208,7 @@
         (rearm
          expr
          (kernel:kernel-syntax-case*
-          (disarm expr) #f (log aggregate edge timeline assert)
+          (disarm expr) #f (log aggregate edge timeline assert changed?)
           [var-stx (identifier? (syntax var-stx)) 
                    (if (syntax-property #'var-stx 'medic)
                        (or (find-bound-var/wrap-context #'var-stx bound-vars) expr)
@@ -273,6 +273,9 @@
                   [label (cdr stamp-id)])
              (quasisyntax/loc expr
                (#%plain-app #,record-timeline #,id #,label cond #t)))]
+          
+          [(#%plain-app changed? e)
+           expr]
                         
           [(#%plain-app . exprs)
            (let ([subexprs (map (lambda (expr) 
