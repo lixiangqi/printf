@@ -23,7 +23,8 @@
 
 (define (get-log-data) log-data)
 
-(define (record-aggregate key pairs)
+(define (record-aggregate key labels vals)
+  (define pairs (map (lambda (l v) (cons l v)) labels vals))
   (cond
     [(hash-has-key? aggre-table key)
      (hash-set! aggre-table key (append (hash-ref aggre-table key) (list pairs)))]
@@ -37,14 +38,13 @@
 
 (define (get-raw-edges) raw-edges)
 
-(define (record-timeline key label value assert?)
-  (define label-str (format "~a" label))
+(define (record-timeline key label value boolean?)
   (cond
     [(hash-has-key? timeline-table key)
-     (hash-set! timeline-table key (append (hash-ref timeline-table key) (list (list label-str value assert?))))]
+     (hash-set! timeline-table key (append (hash-ref timeline-table key) (list (list label value boolean?))))]
     [else
      (set! timeline-sequence (append timeline-sequence (list key)))
-     (hash-set! timeline-table key (list (list label-str value assert?)))]))
+     (hash-set! timeline-table key (list (list label value boolean?)))]))
 
 (define (get-timeline-data)
   (define temp null)
@@ -56,8 +56,8 @@
    (lambda (l)
      (let ([label (first (first l))]
            [values (map second l)]
-           [assert? (third (first l))])
-       (set! timeline-data (append timeline-data (list (list label assert? values))))))
+           [boolean? (third (first l))])
+       (set! timeline-data (append timeline-data (list (list label boolean? values))))))
    temp)
   (set! timeline-sequence null)
   (set! timeline-table #f)

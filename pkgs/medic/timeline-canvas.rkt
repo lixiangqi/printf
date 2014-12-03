@@ -7,7 +7,7 @@
 
 (define timeline-canvas%
   (class canvas%
-    (init-field (data #f))
+    (init-field (data null))
     (inherit get-dc refresh client->screen
              get-top-level-window
              get-view-start
@@ -15,7 +15,7 @@
     (super-new)
     
     (define labels (map first data))
-    (define asserts (map second data))
+    (define tags (map second data))
     (define values (map third data))
     (define dc (get-dc))
     
@@ -45,6 +45,7 @@
     (define bitmap-width (inexact->exact (- square-size 4)))
     (define bitmap-height (inexact->exact text-height))
     (define offset (- square-center bitmap-height))
+    (define ellipsis-offset (- square-center (/ (get-text-width "...") 2)))
     
     (define single-tooltip (new tooltip-frame% [frame-to-track (get-top-level-window)]))
     (define value-tooltips (make-vector (length labels)))
@@ -59,8 +60,6 @@
     (define/private (get-text-width s)
       (define-values (w h r1 r2) (send dc get-text-extent s))
       w)
-    
-    (define ellipsis-offset (- square-center (/ (get-text-width "...") 2)))
     
     (define/private (visualize-number l)
       
@@ -213,10 +212,10 @@
       (for ([i (in-range (length types))])
         (let ([t (list-ref types i)]
               [d (list-ref values i)]
-              [assert? (list-ref asserts i)])
+              [boolean? (list-ref tags i)])
           (case t
             [(number) (visualize-number d)]
-            [(boolean) (if assert? (visualize-boolean d "LightGray" "Red") (visualize-boolean d "Navy" "Red"))]
+            [(boolean) (if boolean? (visualize-boolean d "LightGray" "Red") (visualize-boolean d "Navy" "Red"))]
             [(other) (visualize-other-data d)])
           (set! start-y (+ start-y square-size))))
       (display-focus-info))
@@ -243,7 +242,6 @@
          (mouse-position->timeline-value (send evt get-x) (send evt get-y))]
         [(send evt button-up? 'left)
          (send single-tooltip show #f)]))
-      
     
     (define/public (scrutinize cur)
       (set! focus (sub1 cur))

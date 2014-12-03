@@ -162,7 +162,9 @@
            (list "x2" #f (list #f #f #f #f #t))
            (list "x2 > 5" #t (list #f #t #f #t #t))
            ))
-    (define max-length (apply max (map length (map third timeline-data))))
+    (define max-length 0)
+    (unless (null? timeline-data)
+      (set! max-length (apply max (map length (map third timeline-data)))))
     (define slider-panel (new horizontal-panel% 
                               [parent timeline-panel] 
                               [stretchable-height #f]
@@ -177,13 +179,17 @@
                         [max-value max-length] 
                         [parent slider-panel]
                         [callback on-step]))
-    (define timeline-canvas (new timeline-canvas%
-                                 [data timeline-data]
-                                 [parent timeline-panel]
-                                 [style '(hscroll vscroll)]))
-    (send timeline-canvas init-auto-scrollbars 
-          (send timeline-canvas get-actual-width) 
-          (send timeline-canvas get-actual-height)
-          0.0 0.0)
-    (send timeline-canvas show-scrollbars #t #t)))
     
+    (define timeline-canvas #f)
+    (if (null? timeline-data)
+        (set! timeline-canvas (new canvas% [parent timeline-panel]))
+        (begin
+          (set! timeline-canvas (new timeline-canvas%
+                                     [data timeline-data]
+                                     [parent timeline-panel]
+                                     [style '(hscroll vscroll)]))
+          (send timeline-canvas init-auto-scrollbars 
+                (send timeline-canvas get-actual-width) 
+                (send timeline-canvas get-actual-height)
+                0.0 0.0)
+          (send timeline-canvas show-scrollbars #t #t)))))

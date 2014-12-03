@@ -123,7 +123,7 @@
                   (arg-list
                    #,@new-bodies)))]))
      
-      (define (log-expression-annotator e layer-id)
+      (define (log-expression-annotator e label layer-id)
         (define (lookup-var args vals var)
           (let loop ([i 0])
             (if (< i (length args))
@@ -162,7 +162,7 @@
                                [str (#,substitute-val #,template-str (list #,@template-at-args) replaces)]
                                [final-str (if #,template-ret (#,string-replace str #,template-ret ret-value) str)])
                           (#,add-log final-str '#,layer-id #t))))
-                    (quasisyntax/loc e (#,add-log (format "~a = ~v" 'app app) '#,layer-id #f)))]
+                    (quasisyntax/loc e (#,add-log (format "~a = ~v" #,label app) '#,layer-id #f)))]
                [else
                 (error 'log-expression-annotator "unknown expr: ~a"
                        (syntax->datum e))]))]
@@ -252,20 +252,25 @@
                                    #,(annotate #'body bound-vars id)))]
           
           [(#%plain-app log . data)
-           (log-expression-annotator #'data (format "~a" (get-syntax-property expr 'layer)))]
+           (let ([label (cdr (get-syntax-property expr 'stamp))])
+             (log-expression-annotator #'data label (format "~a" (get-syntax-property expr 'layer))))]
           
           [(#%plain-app aggregate v ...)
-           (let ([stamp-id (get-syntax-property expr 'stamp)])
+           (let* ([stamp (get-syntax-property expr 'stamp)]
+                  [id (car stamp)]
+                  [labels (cdr stamp)])
              (quasisyntax/loc expr
-               (#,record-aggregate #,stamp-id (list (cons 'v v) ...))))]
+               (#,record-aggregate #,id (list #,@labels) (list v ...))))]
           
           [(#%plain-app edge . args)
            (edge-expression-annotator #'args)]
           
           [(#%plain-app timeline id)
-           (let ([timeline-id (get-syntax-property expr 'stamp)])
+           (let* ([stamp (get-syntax-property expr 'stamp)]
+                  [timeline-id (car stamp)]
+                  [label (cdr stamp)])
              (quasisyntax/loc expr
-               (#%plain-app #,record-timeline #,timeline-id 'id id #f)))]
+               (#%plain-app #,record-timeline #,timeline-id #,label id #f)))]
           
           [(#%plain-app assert cond)
            (let* ([stamp-id (get-syntax-property expr 'stamp)]

@@ -3,7 +3,7 @@
 (require "medic-structs.rkt")
 
 (provide (rename-out [module-begin #%module-begin])
-         define
+         define log
          #%top-interaction)
 
 
@@ -259,7 +259,16 @@
          (add-at-insert at-struct))]))
   
   (define (interpret-src-expr stx)
-    (syntax-case stx (ref aggregate timeline assert)
+    
+    (define (attach-stx-property s d)
+      (set! counter (add1 counter))
+      (define original-e (if (list? d) 
+                             (map (lambda (i) (format "~a" (syntax->datum i))) d) 
+                             (format "~a" (syntax->datum d))))
+      (syntax-property (syntax-property s 'layer current-layer-id)
+                       'stamp (cons counter original-e)))
+      
+    (syntax-case stx (ref aggregate timeline assert changed? log)
       [(ref src-id)
        (let* ([id (syntax->datum #'src-id)]
               [exprs (hash-ref src-table id #f)])
@@ -275,23 +284,23 @@
                     (map interpret-src-expr found-expr))
                   (iterate (rest lst))))]))]
       
-      [(aggregate v . vs) 
-       (begin
-         (set! counter (add1 counter))
-         (syntax-property (syntax-property stx 'layer current-layer-id)
-                          'stamp counter))]
+      [(log v)
+       (attach-stx-property stx #'v)]
+      
+      [(aggregate) 
+       (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]
+      
+      [(aggregate v ...) 
+       (attach-stx-property stx (syntax->list #'(v ...)))]
       
       [(timeline id)
-       (begin
-         (set! counter (add1 counter))
-         (syntax-property (syntax-property stx 'layer current-layer-id)
-                          'stamp counter))]
+       (attach-stx-property stx #'id)]
+      
+      [(changed? e)
+       (attach-stx-property stx #'e)]
       
       [(assert cond)
-       (begin
-         (set! counter (add1 counter))
-         (syntax-property (syntax-property stx 'layer current-layer-id)
-                          'stamp (cons counter (format "~a" (syntax->datum #'cond)))))]
+       (attach-stx-property stx #'cond)]
       
       [(define (var) expr ...)
        (quasisyntax/loc stx
