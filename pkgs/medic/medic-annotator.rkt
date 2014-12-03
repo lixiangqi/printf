@@ -43,6 +43,9 @@
                                      #,(rearm
                                         #'mb
                                         #`(plain-module-begin
+                                           (#%require racket/base)
+                                           (define old (current-inspector))
+                                           (current-inspector (make-inspector old))
                                            #,@(map (lambda (e) (module-level-expr-iterator e))
                                                    (syntax->list #'module-level-exprs)))))))])]))
     
@@ -208,7 +211,7 @@
         (rearm
          expr
          (kernel:kernel-syntax-case*
-          (disarm expr) #f (log aggregate edge timeline assert changed?)
+          (disarm expr) #f (log aggregate edge timeline assert same?)
           [var-stx (identifier? (syntax var-stx)) 
                    (if (syntax-property #'var-stx 'medic)
                        (or (find-bound-var/wrap-context #'var-stx bound-vars) expr)
@@ -279,9 +282,10 @@
              (quasisyntax/loc expr
                (#%plain-app #,record-timeline #,id #,label cond #t)))]
           
-          [(#%plain-app changed? id)
+          [(#%plain-app same? id)
            (quasisyntax/loc expr
-             (#%plain-app #,record-changed #'id 'id id))]
+              (parameterize ([current-inspector old])
+                (#%plain-app #,record-changed #'id 'id id)))]
                         
           [(#%plain-app . exprs)
            (let ([subexprs (map (lambda (expr) 

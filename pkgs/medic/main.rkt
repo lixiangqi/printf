@@ -268,7 +268,7 @@
       (syntax-property (syntax-property s 'layer current-layer-id)
                        'stamp (cons counter original-e)))
       
-    (syntax-case stx (ref aggregate timeline assert log changed?)
+    (syntax-case stx (ref aggregate timeline assert log same?)
       [(ref src-id)
        (let* ([id (syntax->datum #'src-id)]
               [exprs (hash-ref src-table id #f)])
@@ -293,7 +293,7 @@
       [(aggregate v ...) 
        (attach-stx-property stx (syntax->list #'(v ...)))]
       
-      [(changed? id) (not (identifier? #'id))
+      [(same? id) (not (identifier? #'id))
        (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]      
       
       [(timeline id)

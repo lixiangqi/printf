@@ -5,7 +5,7 @@
          edge
          timeline
          assert
-         changed?)
+         same?)
 
 (define (log datum) (void))
 
@@ -17,4 +17,4 @@
 
 (define (assert cond) (void))
 
-(define (changed? e) (void))
+(define (same? e) (void))

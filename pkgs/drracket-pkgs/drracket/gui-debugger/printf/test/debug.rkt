@@ -2,22 +2,26 @@
 
 (layer layer1
        (in #:file "src.rkt"
-           [on-entry (define t 9) (timeline t)]
-           [(fact) 
-            [on-entry (timeline x)]
-            [on-entry (changed? x)]]
+          
            
            [on-exit 
-            (assert (> x 0))
-            (changed? x)
-            (set! x 'a)
-            (changed? x)
+            (define test% (class object% 
+                            (super-new) 
+                            (define a 1)
+                            (define/public (get-a) a)
+                            (define/public (set-a) (set! a 2))))
+            (define m (new test%))
+            (define n (new test%))
             
-;            (define t (cons 1 2))
-;            (changed? t)
-;            (set! t (cons 2 3))
-;            (changed? t)
-            
+          
+            (define p (cons 1 m))
+            (same? p)
+            (same? m)
+            (send m set-a)
+            (same? m)
+            ;(set! t (posn 1 2))
+            (set! p (cons 1 m))
+            (same? p)
 ;            (define s (cons 1 2))
 ;            (changed? s)
 ;            (set! t (cons 2 3))
