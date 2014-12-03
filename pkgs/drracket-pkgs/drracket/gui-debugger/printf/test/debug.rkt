@@ -2,13 +2,13 @@
 
 (layer layer1
        (in #:file "src.rkt"
-           [(fact) [on-entry
-                    (log (cons 1 x))
-                    (log "string")
-                    (aggregate x (cons 1 x))
-                    (timeline (cons 1 x))
-                    (assert (> x 0))
-                    ]]
+           
            [on-exit 
-            (assert (> x 0))
-            (log x)]))
+            (define t (cons 1 2))
+            (changed? t)
+            (set! t (cons 2 3))
+            (changed? t)
+            (set! t (cons 2 3))
+            (changed? t)
+            (set! t (cons 1 2))
+            (changed? t)]))

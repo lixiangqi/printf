@@ -162,6 +162,7 @@
            (list "x2" #f (list #f #f #f #f #t))
            (list "x2 > 5" #t (list #f #t #f #t #t))
            ))
+    (printf "timeline-data...=~v\n" timeline-data)
     (define max-length 0)
     (unless (null? timeline-data)
       (set! max-length (apply max (map length (map third timeline-data)))))
