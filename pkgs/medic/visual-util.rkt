@@ -54,7 +54,6 @@
          ; check equality of all public and private fields
          (let ([res1 (andmap (lambda (i) (not (false? i))) 
                              (for/list ([i (in-range field-cnt1)])
-                               ;(printf "@@=~v\n" (check-equal? (field-accessor1 v1 i) (field-accessor2 v2 i)))
                                (check-equal? (field-accessor1 v1 i) (field-accessor2 v2 i))))])
            (if res1
                ; check equality of all public and inherited fields
@@ -67,15 +66,22 @@
 
 (define (check-same? v1 v2)
   (equal?/recur (list v1) (list v2) (lambda (a b) (check-equal? a b))))
-  
+
+(define (convert-value d)
+  (cond
+    [(pair? d) 
+     (cons (convert-value (car d))
+           (convert-value (cdr d)))]
+    [(vector? d)
+     (vector-map convert-value d)]
+    [(box? d)
+     (convert-value (unbox d))]
+    [(struct? d) (struct->vector d)]
+    [(object? d) (object->vector d)]
+    [else d]))
 
 (define (record-changed id-stx label val)
-  (define copy val)
-  (cond
-    [(object? val) (set! copy (object->vector val))]
-    [else (when (struct? val) (set! copy (struct->vector val)))])
- 
-  
+  (define copy (convert-value val))
   (define label-str (format "~a" label))
   (define len (length identifiers))
   (let loop ([i 0])
@@ -88,9 +94,7 @@
             (loop (add1 i)))
         (begin
           (set! identifiers (append identifiers (list id-stx)))
-          (hash-set! changed-table i (list (list label-str copy #t))))))
-  (printf "hash table=~v\n" changed-table)
-  )
+          (hash-set! changed-table i (list (list label-str copy #t)))))))
 
 (define (record-timeline key label value boolean?)
   (cond
@@ -123,7 +127,6 @@
 ;; should process it use equal? to return only boolean values
 ;; make inspector
 (define (get-changed-data)
-  (printf "[in get] table=~v\n" changed-table)
   (define data (for/list ([i (in-range (length identifiers))])
                  (let* ([val (hash-ref changed-table i)]
                         [label (first (first val))]

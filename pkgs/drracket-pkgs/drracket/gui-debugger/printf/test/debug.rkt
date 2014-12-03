@@ -3,7 +3,7 @@
 (layer layer1
        (in #:file "src.rkt"
           
-           
+           [(fact) [on-entry (timeline x)]]
            [on-exit 
             (define test% (class object% 
                             (super-new) 
