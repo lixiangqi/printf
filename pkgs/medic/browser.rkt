@@ -145,7 +145,7 @@
     ;; Timeline
     (define timeline-data (append (get-timeline-data) 
                                   (get-changed-data)))
-    #;(set! timeline-data 
+    (set! timeline-data 
           (list 
            (list "str1" #f (list "hello" "world" 1 #t "time line" "core" "canvas" "to" 'started 'loop 'download 'it 6 9 #t #f
                                 "hello" "world" 1 #t "time line" "core" "canvas" "to" 'started 'loop 'download 'it 6 9 #t #f))

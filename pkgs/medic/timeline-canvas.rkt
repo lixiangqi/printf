@@ -180,13 +180,15 @@
                [tooltip-x (inexact->exact (ceiling (+ line-x 10)))])
           (send dc set-pen "Yellow" 1 'solid)
           (send dc draw-line line-x square-size line-x line-y)
+          (define-values (virtual-x virtual-y) (get-view-start))
+          (define-values (width height) (get-client-size))
           (for ([i (in-range len)])
-            (define-values (virtual-x virtual-y) (get-view-start))
-            (define-values (width height) (get-client-size))
             (define current-unit-y (* square-size (add1 i)))
             (cond
               [(or (< current-unit-y virtual-y)
-                   (> current-unit-y (+ virtual-y height)))
+                   (> current-unit-y (+ virtual-y height))
+                   (> tooltip-x (+ virtual-x width))
+                   (< tooltip-x virtual-x))
                 (send (vector-ref value-tooltips i) show #f)]
               [else
                (define series (list-ref values i))
@@ -199,7 +201,7 @@
                      (define-values (mx my) (get-display-left-top-inset #:monitor 0))
                      (send current-tooltip show #f)
                      (send current-tooltip set-tooltip (list (format "~v" val)))
-                     (send current-tooltip show-over (+ canvas-screen-x tooltip-x (- mx)) (+ canvas-screen-y tooltip-y (- my)) 0 0))
+                     (send current-tooltip show-over (+ canvas-screen-x tooltip-x (- mx) (- virtual-x)) (+ canvas-screen-y tooltip-y (- my)) 0 0))
                    (send (vector-ref value-tooltips i) show #f))])))]))
       
     (define/override (on-paint)
@@ -245,6 +247,12 @@
     
     (define/public (scrutinize cur)
       (set! focus (sub1 cur))
+      (unless (= focus -1)
+        (define view-x (+ init-x square-center (* square-size focus)))
+        (define-values (m n) (get-client-size))
+        (when (> view-x m)
+          (define p (/ view-x (get-actual-width)))
+          (send this scroll p #f)))
       (refresh))
     
     (define/public (get-actual-width)

@@ -121,11 +121,6 @@
   (set! aggre-sequence null)
   data)
 
-;; data is like
-;; ("x" #t (7 5)) 
-;; ("x" #t (-1 a)
-;; should process it use equal? to return only boolean values
-;; make inspector
 (define (get-changed-data)
   (define data (for/list ([i (in-range (length identifiers))])
                  (let* ([val (hash-ref changed-table i)]
