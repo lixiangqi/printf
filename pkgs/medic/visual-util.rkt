@@ -1,22 +1,25 @@
 #lang racket
 
 (provide add-log
-         get-log-data
-         record-aggregate
-         get-aggregate-data
          add-edge
-         get-raw-edges
+         record-aggregate
          record-timeline
-         get-timeline-data)
+         record-changed
+         get-log-data
+         get-raw-edges
+         get-aggregate-data
+         get-timeline-data
+         get-changed-data)
 
 (define log-data null)
 (define snip-size 30)
 (define raw-edges (make-hash))
 (define timeline-table (make-hash))
 (define timeline-sequence null)
-(define timeline-data null)
 (define aggre-table (make-hash))
 (define aggre-sequence null)
+(define identifiers null)
+(define changed-table (make-hash))
 
 (define (add-log str layer-id behavior?)
   (set! log-data (append log-data (list (list str layer-id behavior?)))))
@@ -38,6 +41,18 @@
 
 (define (get-raw-edges) raw-edges)
 
+(define (record-changed id-stx label val)
+  (define label-str (format "~a" label))
+  (define len (length identifiers))
+  (let loop ([i 0])
+    (if (< i len)
+        (if (free-identifier=? (list-ref identifiers i) id-stx)
+            (hash-set! changed-table i (append (hash-ref changed-table i) (list (list label-str val))))
+            (loop (add1 i)))
+        (begin
+          (set! identifiers (append identifiers (list id-stx)))
+          (hash-set! changed-table i (list (list label-str val)))))))
+
 (define (record-timeline key label value boolean?)
   (cond
     [(hash-has-key? timeline-table key)
@@ -47,23 +62,33 @@
      (hash-set! timeline-table key (list (list label value boolean?)))]))
 
 (define (get-timeline-data)
-  (define temp null)
-  (for-each
-   (lambda (n)
-     (set! temp (append temp (list (hash-ref timeline-table n)))))
-   timeline-sequence)
-  (for-each 
-   (lambda (l)
-     (let ([label (first (first l))]
-           [values (map second l)]
-           [boolean? (third (first l))])
-       (set! timeline-data (append timeline-data (list (list label boolean? values))))))
-   temp)
+  (define data (for/list ([i timeline-sequence])
+                 (let* ([val (hash-ref timeline-table i)]
+                        [label (first (first val))]
+                        [values (map second val)]
+                        [boolean? (third (first val))])
+                   (list label boolean? values))))
   (set! timeline-sequence null)
   (set! timeline-table #f)
-  timeline-data)
+  data)
 
 (define (get-aggregate-data)
-  (map (lambda (n) (hash-ref aggre-table n)) aggre-sequence))
-  
-  
+  (define data (map (lambda (n) (hash-ref aggre-table n)) aggre-sequence))
+  (set! aggre-table #f)
+  (set! aggre-sequence null)
+  data)
+
+;; data is like
+;; ("x" #t (7 5)) 
+;; ("x" #t (-1 a)
+;; should process it use equal? to return only boolean values
+;; make inspector
+(define (get-changed-data)
+  (define data (for/list ([i (in-range (length identifiers))])
+                 (let* ([val (hash-ref changed-table i)]
+                        [label (first (first val))]
+                        [values (map second val)])
+                   (list label #t values))))
+  (set! identifiers null)
+  (set! changed-table #f)
+  data)

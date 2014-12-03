@@ -66,7 +66,7 @@
       [(layer layer-id layer-expr ...) (identifier? #'layer-id)
        (interpret-layer-form (syntax/loc stx (layer layer-id #:enable #t layer-expr ...)))]                                          
       [else
-       (error 'invalid-debugging-expression "expr = ~a\n" (syntax->datum stx))]))
+       (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]))
   
   (define (interpret-expr stx flag)
     (syntax-case stx (def in)
@@ -102,7 +102,7 @@
       [(op id ...) (equal? 'export (syntax->datum #'op))
        (set! exports (map syntax->datum (syntax->list #'(id ...))))] 
       [else
-       (error 'invalid-debugging-expression "expr = ~a\n" (syntax->datum stx))]))
+       (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]))
   
   (define (extract-start-string str)
     (define extract (or (regexp-match #rx"[^|].+[^|]" str) str))
@@ -223,7 +223,7 @@
                  (syntax->list #'(border-expr ...)))]
       
       [else
-       (error 'invalid-debugging-expression "expr = ~a\n" (syntax->datum stx))]))
+       (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]))
   
   (define (interpret-border-expr stx fn scope target-exp [before '()] [after '()])
     
@@ -268,7 +268,7 @@
       (syntax-property (syntax-property s 'layer current-layer-id)
                        'stamp (cons counter original-e)))
       
-    (syntax-case stx (ref aggregate timeline assert changed? log)
+    (syntax-case stx (ref aggregate timeline assert log changed?)
       [(ref src-id)
        (let* ([id (syntax->datum #'src-id)]
               [exprs (hash-ref src-table id #f)])
@@ -293,11 +293,11 @@
       [(aggregate v ...) 
        (attach-stx-property stx (syntax->list #'(v ...)))]
       
+      [(changed? id) (not (identifier? #'id))
+       (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]      
+      
       [(timeline id)
        (attach-stx-property stx #'id)]
-      
-      [(changed? e)
-       (attach-stx-property stx #'e)]
       
       [(assert cond)
        (attach-stx-property stx #'cond)]

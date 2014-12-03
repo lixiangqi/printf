@@ -279,13 +279,9 @@
              (quasisyntax/loc expr
                (#%plain-app #,record-timeline #,id #,label cond #t)))]
           
-          ; should use free-identifier=?
-          [(#%plain-app changed? e)
-           (let* ([stamp (get-syntax-property expr 'stamp)]
-                  [id (car stamp)]
-                  [label (cdr stamp)])
-             (quasisyntax/loc expr
-               (#%plain-app #,record-timeline #,id #,label e #t)))]
+          [(#%plain-app changed? id)
+           (quasisyntax/loc expr
+             (#%plain-app #,record-changed #'id 'id id))]
                         
           [(#%plain-app . exprs)
            (let ([subexprs (map (lambda (expr) 
