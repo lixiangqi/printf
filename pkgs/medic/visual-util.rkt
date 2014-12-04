@@ -37,6 +37,8 @@
 
 (define (add-edge from to edge-label from-label to-label)
   (when (and (object? from) (object? to))
+    (define bi-directed? (hash-has-key? raw-edges (cons to from)))
+    (printf "bi? = ~v\n" bi-directed?)
     (hash-set! raw-edges (cons from to) (list edge-label from-label to-label))))
 
 (define (get-raw-edges) raw-edges)

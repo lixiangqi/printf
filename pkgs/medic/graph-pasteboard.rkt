@@ -178,13 +178,26 @@
        (lambda (e)
          (let ([from-node (send e get-from-node)]
                [to-node (send e get-to-node)])
-           (add-links/text-colors (hash-ref snips from-node)
+           #;(add-links/text-colors (hash-ref snips from-node)
                                   (hash-ref snips to-node)
+                                  dark-pen light-pen
+                                  (send the-brush-list find-or-create-brush "Blue" 'solid) 
+                                  
+                                  (send the-brush-list find-or-create-brush "Green" 'solid)
+                                  dark-c light-c
+                                  0 0
+                                  (send e get-label))
+           (add-links/text-colors 
+                                  (hash-ref snips to-node)
+                                  (hash-ref snips from-node)
                                   dark-pen light-pen
                                   dark-brush light-brush
                                   dark-c light-c
                                   0 0
-                                  (send e get-label))))
+                                  (send e get-label))
+           
+           
+           ))
        (hash-values edges)))
     
     (define/public (tick)

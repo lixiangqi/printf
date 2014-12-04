@@ -25,6 +25,7 @@
             (define e (new test%))
             (define f (new test%))
             (edge a b "ab" "" "")
+            (edge b a)
             (edge b c "bc" "" "")
             (edge b d "bd" "" "")
             (edge b e "be" "" "")
