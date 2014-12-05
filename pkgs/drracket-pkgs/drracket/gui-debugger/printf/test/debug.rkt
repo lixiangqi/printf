@@ -3,30 +3,28 @@
 (layer layer1
        (in #:file "src.rkt"
           
-           [(fact) [on-entry (timeline x)]]
+           
            [on-exit 
-            (define test% (class object% 
-                            (super-new) 
-                            (define a 1)
-                            (define/public (get-a) a)
-                            (define/public (set-a) (set! a 2))))
-            (define m (new test%))
-            (define n (new test%))
+            (define test%
+              (class object%
+                (super-new)))
+            (define a (new test%))
+            (define b (new test%))
+            (define c (new test%))
+            (define d (new test%))
+            (define e (new test%))
+            (define f (new test%))
+            (edge a b "ab" "a" "b")
+            (edge b a #f "b" "a" "red")
             
-          
-            (define p (cons 1 m))
-            (same? p)
-            (same? m)
-            (send m set-a)
-            (same? m)
-            ;(set! t (posn 1 2))
-            (set! p (cons 1 m))
-            (same? p)
-;            (define s (cons 1 2))
-;            (changed? s)
-;            (set! t (cons 2 3))
-;            (changed? t)
-;            (set! t (cons 1 2))
-;            (changed? t)
+            (edge b c #f "b" "c")
+            (edge c b #f "c" "b" "red")
             
+            (edge d b "dttttb" "d" "b")
+            (edge b d "bd" "b" "d" "red")
+            
+            (edge e b #f "e" "b")
+            (edge b e "be" "b" "e" "red")
+            
+            (edge b f "bf" "b" "f")
             ]))

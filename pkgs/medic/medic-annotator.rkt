@@ -176,16 +176,19 @@
         (syntax-case e ()
           [(from to)
            (quasisyntax/loc e
-             (#%plain-app #,add-edge from to #f (format "~v" from) (format "~v" to)))]
+             (#%plain-app #,add-edge from to #f (format "~v" from) (format "~v" to) #f))]
           [(from to edge-label)
            (quasisyntax/loc e
-             (#%plain-app #,add-edge from to edge-label (format "~v" from) (format "~v" to)))]
+             (#%plain-app #,add-edge from to edge-label (format "~v" from) (format "~v" to) #f))]
           [(from to edge-label from-label)
            (quasisyntax/loc e
-             (#%plain-app #,add-edge from to edge-label from-label (format "~v" to)))]
+             (#%plain-app #,add-edge from to edge-label from-label (format "~v" to) #f))]
           [(from to edge-label from-label to-label)
            (quasisyntax/loc e
-             (#%plain-app #,add-edge from to edge-label from-label to-label))]))
+             (#%plain-app #,add-edge from to edge-label from-label to-label #f))]
+          [(from to edge-label from-label to-label color)
+           (quasisyntax/loc e
+             (#%plain-app #,add-edge from to edge-label from-label to-label color))]))
       
       (define (find-bound-var/wrap-context var lst)
         (define (find-bound-var var-lst)

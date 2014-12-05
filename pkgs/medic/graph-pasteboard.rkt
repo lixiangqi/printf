@@ -2,6 +2,8 @@
 
 (require mrlib/graph
          racket/gui/base
+         (only-in racket/string string-normalize-spaces)
+         (only-in unstable/gui/pict dark light)
          "quadtree.rkt")
 
 (provide graph-pasteboard%)
@@ -52,6 +54,7 @@
     (define/augment (can-interactive-resize? evt) #f)
     
     (define/private (init-graph-elements)
+      
       (for-each
        (lambda (key)
          (let* ([from (car key)]
@@ -59,15 +62,22 @@
                 [val (hash-ref raw-edges key)]
                 [edge-label (first val)]
                 [from-label (second val)]
-                [to-label (third val)])
+                [to-label (third val)]
+                [bi-directed? (fourth val)]
+                [color (fifth val)])
            (unless (hash-has-key? nodes from) (hash-set! nodes from (new node% [label from-label])))
            (unless (hash-has-key? nodes to) (hash-set! nodes to (new node% [label to-label])))
            (define from-node (hash-ref nodes from))
            (define to-node (hash-ref nodes to))
            (unless (equal? from-node to-node)
              (let ([k (cons from to)])
-               (unless (hash-has-key? edges k) 
-                 (hash-set! edges k (new edge% [from from-node] [to to-node] [label edge-label])))))))
+               (unless (hash-has-key? edges k)
+                 (hash-set! edges k (new edge% 
+                                         [from from-node] 
+                                         [to to-node] 
+                                         [label edge-label] 
+                                         [bi-directed bi-directed?]
+                                         [color color])))))))
          (hash-keys raw-edges)))
    
     (define node%
@@ -103,7 +113,9 @@
       (class object%
         (init-field [from #f]
                     [to #f]
-                    [label ""])
+                    [label ""]
+                    [bi-directed #f]
+                    [color #f])
     
         (super-new)
         (install-edge this)
@@ -114,7 +126,9 @@
         (define/public (get-to-node) to)
         (define/public (set-to-node t) (set! to t))
     
-        (define/public (get-label) label)))
+        (define/public (get-label) label)
+        (define/public (get-bi-directed) bi-directed)
+        (define/public (get-color) color)))
     
     (define/private (get-text-width str)
       (define dc (new bitmap-dc% [bitmap (make-object bitmap% 1 1)]))
@@ -166,38 +180,28 @@
       (end-edit-sequence))
     
     (define/public (layout-edges)
-      (define dark-color "DarkGray")
-      (define light-color "Gray")
-      (define dark-pen (send the-pen-list find-or-create-pen dark-color 0 'solid))
-      (define light-pen (send the-pen-list find-or-create-pen light-color 0 'solid))
-      (define dark-brush (send the-brush-list find-or-create-brush dark-color 'solid))
-      (define light-brush (send the-brush-list find-or-create-brush light-color 'solid))
-      (define dark-c (make-object color% dark-color))
-      (define light-c (make-object color% light-color))
+      (define default-light-color "LightGray")
+      (define default-dark-color "Gray")
       (for-each
        (lambda (e)
-         (let ([from-node (send e get-from-node)]
-               [to-node (send e get-to-node)])
-           #;(add-links/text-colors (hash-ref snips from-node)
+         (let* ([from-node (send e get-from-node)]
+                [to-node (send e get-to-node)]
+                [color (send e get-color)]
+                [light-color (or color default-light-color)]
+                [dark-color (if color (dark light-color) default-dark-color)]
+                [light-pen (send the-pen-list find-or-create-pen default-light-color 0 'solid)]
+                [dark-pen (send the-pen-list find-or-create-pen default-dark-color 0 'solid)]
+                [light-brush (send the-brush-list find-or-create-brush light-color 'solid)]
+                [dark-brush (send the-brush-list find-or-create-brush dark-color 'solid)]
+                [light-c (make-object color% default-light-color)]
+                [dark-c (make-object color% default-dark-color)])
+           (add-links/text-colors (hash-ref snips from-node)
                                   (hash-ref snips to-node)
-                                  dark-pen light-pen
-                                  (send the-brush-list find-or-create-brush "Blue" 'solid) 
-                                  
-                                  (send the-brush-list find-or-create-brush "Green" 'solid)
-                                  dark-c light-c
-                                  0 0
-                                  (send e get-label))
-           (add-links/text-colors 
-                                  (hash-ref snips to-node)
-                                  (hash-ref snips from-node)
                                   dark-pen light-pen
                                   dark-brush light-brush
                                   dark-c light-c
                                   0 0
-                                  (send e get-label))
-           
-           
-           ))
+                                  (send e get-label))))
        (hash-values edges)))
     
     (define/public (tick)

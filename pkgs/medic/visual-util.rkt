@@ -35,11 +35,24 @@
      (set! aggre-sequence (append aggre-sequence (list key)))
      (hash-set! aggre-table key (list pairs))]))
 
-(define (add-edge from to edge-label from-label to-label)
+(define (add-edge from to edge-label from-label to-label color)
+  (define (valid-string? s)
+    (and s (not (string=? (string-normalize-spaces s) "")) s))
+  
   (when (and (object? from) (object? to))
     (define bi-directed? (hash-has-key? raw-edges (cons to from)))
-    (printf "bi? = ~v\n" bi-directed?)
-    (hash-set! raw-edges (cons from to) (list edge-label from-label to-label))))
+    (cond
+      [bi-directed?
+       (let* ([v (hash-ref raw-edges (cons to from))]
+              [e (first v)]
+              [f (second v)]
+              [t (third v)])
+         (when (and (valid-string? e) (valid-string? edge-label))
+           (set! e #f))
+         (hash-set! raw-edges (cons to from) (list e f t bi-directed? (fifth v)))
+         (hash-set! raw-edges (cons from to) (list edge-label from-label to-label bi-directed? color)))]
+      [else
+       (hash-set! raw-edges (cons from to) (list edge-label from-label to-label bi-directed? color))])))
 
 (define (get-raw-edges) raw-edges)
 
