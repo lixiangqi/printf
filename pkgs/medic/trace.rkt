@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (provide log 
          aggregate
@@ -11,7 +11,7 @@
 
 (define (aggregate v . vs) (void))
 
-(define (edge from-node to-node [edge-label ""] [from-label ""] [to-label ""] [color #f]) (void))
+(define (edge from to [edge-label ""] [from-label ""] [to-label ""] [color #f]) (void))
 
 (define (timeline e) (void))
 

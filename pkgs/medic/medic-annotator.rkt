@@ -4,8 +4,8 @@
            (for-syntax scheme/base)
            (only-in mzscheme [apply plain-apply])
            racket/string
-           "visual-util.rkt"
-           "visual-lib.rkt")
+           "trace-util.rkt"
+           "trace.rkt")
   (provide annotate-stx)
   
   (define (arglist-bindings arglist-stx)

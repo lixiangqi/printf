@@ -10,7 +10,7 @@
          "aggregate-editor.rkt"
          "graph-pasteboard.rkt"
          "timeline-canvas.rkt"
-         "visual-util.rkt")
+         "trace-util.rkt")
 
 (provide make-trace-browser)
 

@@ -2,13 +2,16 @@
 
 @(require scribble/manual
           redex/pict
-          scriblib/figure)
+          scriblib/figure
+          (for-label (except-in racket log)
+                     racket/contract/base
+                     medic/trace))
+
 @title{Medic Debugger}
 @author["Xiangqi Li"]
 
 the medic debugger 
-in order to make sure it happen
-hello...
+
 @section{Medic Grammar}
 @(racketgrammar* 
   #:literals (layer export import def in with-behavior ref each-function
@@ -51,7 +54,23 @@ hello...
   [layer-id variable-not-otherwise-mentioned]
   [debug-src-id variable-not-otherwise-mentioned]
   [debug-id variable-not-otherwise-mentioned])
+ 
+@section{Medic Tracing}
+
+@defmodule[medic/trace]
+
+@defproc[(edge [from object?] [to object?] [edge-label any/c ""] [from-label any/c ""] [to-label any/c ""] [color (or/c string? #f) #f])
+
+         void?]{
+Generates an edge in the Graph pane connecting from @racket[from] to @racket[to].  
+The optional arguments @racket[edge-label], @racket[from-label], @racket[to-label] set the label 
+properties of the edge and two connected nodes. The color of the arrow head of the edge is specified
+by @racket[color]. When @racket[color] is @racket[#f], it uses the default gray color.                                  
+}
+
 @section{Log}
-@section{Graph}
+@section{Tracing Graph}
+
+Suppose we have a buggy implementation of the doubly linked list:
 
 
