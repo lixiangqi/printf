@@ -10,7 +10,7 @@
   (provide insert-stx)
 
   (define (insert-stx stx insert-table at-table)
-    
+    (printf "insert-stx=~v\n" stx)
     (define (convert-stx s)
       (let* ([new-stx (strip-context s)]
              [tagged 
