@@ -193,7 +193,6 @@
                           (format "~a" to-label)
                           #f))]
           [(from to edge-label from-label to-label color)
-           (printf "last case....\n")
            (quasisyntax/loc e
              (#%plain-app #,add-edge from to 
                           (format "~a" edge-label)

@@ -1,5 +1,9 @@
 #lang medic
 
+#;(layer layer1
+       (in #:file "src6.rkt"
+           [on-exit (void)]))
+
 (layer layer1
        (in #:file "src6.rkt"
            [on-exit
@@ -8,22 +12,18 @@
                 (super-new)
                 (init-field [datum 0])
                 (field [next #f]
-                       [previous #f])
-                
-                (define/public (get-next) next)
-                (define/public (get-datum) datum)
-                ))
+                       [previous #f])))
             
             (define doubly-linked-list%
               (class object%
                 (field [head #f]
-                       [last #f])
+                       [tail #f])
                 (super-new)
                 (define size 0)
                 
                 (define/public (init d)
                   (set! head (new node% [datum d]))
-                  (set! last head)
+                  (set! tail head)
                   (set! size 1))
                 
                 (define/public (element-at i)
@@ -44,9 +44,9 @@
                     [(zero? size) (init d)]
                     [else
                      (define temp (new node% [datum d]))
-                     (set-field! previous temp last)
-                     (set-field! next last temp)
-                     (set! last temp)
+                     (set-field! previous temp tail)
+                     (set-field! next tail temp)
+                     (set! tail temp)
                      (set! size (add1 size))]))
                 
                 (define/public (add-at i d)
@@ -82,15 +82,15 @@
                      (set! head (get-field next head))
                      (if head
                          (set-field! previous head #f)
-                         (set! last #f))
+                         (set! tail #f))
                      (set! size (sub1 size))
                      res]
                     [else
                      (cond
                        [(= i (sub1 size))
-                        (define res (get-field datum last))
-                        (set! last (get-field previous last))
-                        (set-field! next last #f)
+                        (define res (get-field datum tail))
+                        (set! tail (get-field previous tail))
+                        (set-field! next tail #f)
                         (set! size (sub1 size))
                         res]
                        [else

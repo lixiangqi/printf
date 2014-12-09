@@ -105,7 +105,7 @@
        (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]))
   
   (define (extract-start-string str)
-    (define extract (or (regexp-match #rx"[^|].+[^|]" str) str))
+    (define extract (or (regexp-match #px"[^\\s].+[^\\s]" str) str))
     (when (list? extract)
       (set! extract (car extract)))
     extract)
@@ -178,7 +178,6 @@
        (interpret-at-expr stx fn (map (lambda (i) (format "~a" i)) scope-ids))]))
   
   (define (interpret-at-expr stx fn scope)
-    
     (define (interpret-location-expr stx)
       (syntax-case stx (with-start)
         [(with-start |part-of-expr|)
@@ -316,5 +315,4 @@
                (syntax->list #'((layer layer-id layer-expr ...) ...)))]
     [else
      (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))])
-  
   (list insert-table at-inserts template))
