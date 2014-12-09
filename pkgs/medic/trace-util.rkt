@@ -93,6 +93,10 @@
      (convert-value (unbox d))]
     [(struct? d) (struct->vector d)]
     [(object? d) (object->vector d)]
+    [(hash? d) 
+     (for-each (lambda (k)
+                 (hash-set! d k (convert-value (hash-ref d k))))
+               (hash-keys d))]
     [else d]))
 
 (define (record-changed id-stx label val)
