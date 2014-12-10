@@ -8,6 +8,16 @@
            "medic-structs.rkt")
   
   (provide insert-stx)
+  
+  (define (arglist-bindings arglist-stx)
+    (syntax-case arglist-stx ()
+      [var
+       (identifier? arglist-stx)
+       (list arglist-stx)]
+      [(var ...)
+       (syntax->list arglist-stx)]
+      [(var . others)
+       (cons #'var (arglist-bindings #'others))]))
 
   (define (insert-stx stx insert-table at-table)
     (printf "insert-stx=~v\n" stx)
@@ -224,11 +234,18 @@
           (begin
             (define new-bodies (map (lambda (e) (insert e id)) (syntax->list #'bodies)))
             (define-values (entry-exprs exit-exprs) (get-lambda-exit-entry-inserts id))
-            (quasisyntax/loc clause
-              (arg-list
-               ;#,@entry-exprs
-               #,@new-bodies
-               )))
+            (if (null? exit-exprs)
+                (quasisyntax/loc clause
+                  (arg-list
+                   #,@(map convert-stx entry-exprs)
+                   #,@new-bodies))
+                (quasisyntax/loc clause
+                  (arg-list
+                   #,@(map convert-stx entry-exprs)
+                   #,@new-bodies
+                   #,@(map convert-stx exit-exprs)))))
+            
+           
           #;(begin
             (define new-bodies (map (lambda (e) (insert e id)) (syntax->list #'bodies)))
             (define-values (entry-exprs exit-exprs) (get-lambda-exit-entry-inserts id))

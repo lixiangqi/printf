@@ -17,7 +17,7 @@ technique of inserting print-like expressions.
 @section{A Metaprogramming Language}
 
 The Medic debugger treats the debugging as a metaprogramming activity, where the programmer writes
-a debugging program about the target program to make invisible states of the source code visible.
+a debugging program about the target program to make invisible states of the source program visible.
 The separation of a debugging program from a source program enables reusability and programmability
 of the debugging program. The debugging program can serve as a form of documentation, which preserves
 the efforts invested in debugging, and act as something akin to testing suites that run against

@@ -8,6 +8,6 @@
 (define (fact x)
   (if (zero? x)
       1
-      (* x (fact (sub1 x)))))
+      (* x 3)))
 
 (fact 3)
