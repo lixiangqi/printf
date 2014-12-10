@@ -11,7 +11,6 @@
 
   (define (insert-stx stx insert-table at-table)
     (printf "insert-stx=~v\n" stx)
-    (printf "at-table=~v\n" at-table)
           
     (define (convert-stx s)
       (let* ([new-stx (strip-context s)]
@@ -223,6 +222,14 @@
          clause #f
          [(arg-list . bodies)
           (begin
+            (define new-bodies (map (lambda (e) (insert e id)) (syntax->list #'bodies)))
+            (define-values (entry-exprs exit-exprs) (get-lambda-exit-entry-inserts id))
+            (quasisyntax/loc clause
+              (arg-list
+               ;#,@entry-exprs
+               #,@new-bodies
+               )))
+          #;(begin
             (define new-bodies (map (lambda (e) (insert e id)) (syntax->list #'bodies)))
             (define-values (entry-exprs exit-exprs) (get-lambda-exit-entry-inserts id))
             (define arg-datum (syntax->datum #'arg-list))

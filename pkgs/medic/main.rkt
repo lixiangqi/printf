@@ -305,5 +305,4 @@
                (syntax->list #'((layer layer-id layer-expr ...) ...)))]
     [else
      (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))])
-  (printf "in main: at-inserts=~v\n" at-inserts)
   (list insert-table at-inserts template))

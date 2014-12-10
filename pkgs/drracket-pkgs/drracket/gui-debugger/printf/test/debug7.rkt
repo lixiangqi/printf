@@ -1,4 +1,4 @@
-#lang medic
+#lang at-exp medic
 
 
 #;(layer layer1
@@ -22,6 +22,7 @@
 
 (layer layer1
        (in #:file "src7.rkt"
+           [(at (with-start "(* x (fact (sub1 x")) [on-exit (void)]]
            [(fact)
-            [(at (with-start |(* x (fact (sub1 x|))
+            [(at (with-start "(* x (fact (sub1 x"))
              [on-entry (timeline t)]]]))
