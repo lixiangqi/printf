@@ -19,7 +19,8 @@ technique of inserting print-like expressions.
 The Medic debugger treats the debugging as a metaprogramming activity, where the programmer writes
 a debugging program about the target program to make invisible states of the source program visible.
 The separation of a debugging program from a source program enables reusability and programmability
-of the debugging program. The debugging program can serve as a form of documentation, which preserves
+of the debugging program as well as the intactness of the source program. The debugging program can 
+serve as a form of documentation, which preserves
 the efforts invested in debugging, and act as something akin to testing suites that run against
 a modified program later on during the process of software development.
 
@@ -69,16 +70,15 @@ Here is the grammar for the Medic metaprogramming language:
   [debug-src-id variable-not-otherwise-mentioned]
   [debug-id variable-not-otherwise-mentioned])
 
-There are some points about the grammar rules worth noting:
+There are some points about the language worth noting:
 
 @itemize[
-  @item{As the design of a programming language involves defining primitive elements
-        and providing means of combination and abstraction, the Medic language provides
-        the programmer with expressive powers over describing how the target program should
-        behave and inserting the debugging code into the source code without touching the source
-        code.}
-  @item{The @racket[#:enable] keyword in @racket[layer-form] allows enabling and disabling 
-        inserting debugging expressions into the source code, while the debugging definitions
+  @item{With the primitive elements of debugging and means of combination and abstraction 
+        in this language, the Medic language provides the programmer with expressive powers over augmenting 
+        the source program with desirable debugging behaviors without changing the source 
+        program.}
+  @item{The @racket[#:enable] keyword in @racket[layer-form] permits enabling and disabling adding
+        the debugging behaviors described within @racket[layer-form] to the source code, while the debugging definitions
         within the layer are still available to other layers.}
   @item{The forms @racket[(export id id ...)] and @racket[(import layer-id layer-id ...)] declare
         exports and imports of a layer, where the @racket[id] is the identifier of an internal
@@ -100,12 +100,25 @@ There are some points about the grammar rules worth noting:
         (in #:file (file "/home/xiangqi/test/src.rkt" ....))
         (code:comment "a library path")
         (in #:file test/src ....)
-        ]
-
-} 
-  @item{}
-  @item{}
-  @item{}
+        ]} 
+  @item{The form @racket[(with-behavior f template)] defines the behavior of the @racket[f] function, which is only useful
+        when it goes with the tracing @racket[log] function. See @secref["log"] for more information about the usage.}
+  @item{The core of the language's power to describe how the source program should exhibit the desirable debugging
+        behaviors is captured by @racket[match-expr], which involves @emph{where} to pinpoint and @emph{what} to do. As
+        the Medic language is intended to be @emph{target-language-independent} that works with most popular programming
+        language as much as possible, a minimum set of scope categories is chosen: module scope and function scope. For 
+        example, for the above grammar, the third clause of the @racket[match-expr] non-terminal is within module scope, 
+        and the following three clauses are within function scope. pattern matching function scope
+        
+        
+        The Medic debugging language designs a function scope
+        primitive @racket[each-function]
+        
+        entry, exit, pattern matching, 
+        function scope primitive,
+        
+        }
+ 
                                                               
 
 ]
@@ -147,7 +160,7 @@ an instance of the data type is defined as a change to any part of an instance o
 to an object of a class is defined to be a change to any of the object's inherited, private, or public member
 fields.                                                                        
 }
-@section{Tracing Log}
+@section[#:tag "log"]{Tracing Log}
 
 @section{Tracing Graph}
 
