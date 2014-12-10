@@ -104,12 +104,6 @@
       [else
        (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]))
   
-  (define (extract-start-string str)
-    (define extract (or (regexp-match #px"[^\\s].+[^\\s]" str) str))
-    (when (list? extract)
-      (set! extract (car extract)))
-    extract)
-  
   ; interpret-match-expr: syntax string-of-file-name -> void
   (define (interpret-match-expr stx fn)
     (syntax-case stx (ref at with-behavior each-function with-start each-expression)
@@ -140,10 +134,9 @@
       [[each-function to-insert ...]
        (for-each (lambda (e) (interpret-insert-expr e fn (list 'each-function))) (syntax->list #'(to-insert ...)))]
       
-      [[(with-start |part-of-fun-name|) to-insert ...]
-       (let* ([str (format "~a" (syntax->datum #'part-of-fun-name))]
-              [extract (extract-start-string str)])
-         (for-each (lambda (e) (interpret-insert-expr e fn (list 'with-start extract))) (syntax->list #'(to-insert ...))))]
+      [[(with-start part-of-fun-name) to-insert ...]
+       (let ([str (format "~a" (syntax->datum #'part-of-fun-name))])
+         (for-each (lambda (e) (interpret-insert-expr e fn (list 'with-start str))) (syntax->list #'(to-insert ...))))]
       
       [[(at expr ...) border-expr ...]
        (interpret-insert-expr stx fn (list 'module))]
@@ -180,18 +173,15 @@
   (define (interpret-at-expr stx fn scope)
     (define (interpret-location-expr stx)
       (syntax-case stx (with-start)
-        [(with-start |part-of-expr|)
-         (let* ([str (format "~a" (syntax->datum #'part-of-expr))]
-                [extract (extract-start-string str)])
-           extract)]
+        [(with-start part-of-expr)
+         (format "~a" (syntax->datum #'part-of-expr))]
         [else (format "~a" (syntax->datum stx))]))
     
     (syntax-case stx (at with-start)
-      [[(at (with-start |part-of-expr|)) border-expr ...]
-       (let* ([str (format "~a" (syntax->datum #'part-of-expr))]
-              [extract (extract-start-string str)])
+      [[(at (with-start part-of-expr)) border-expr ...]
+       (let ([str (format "~a" (syntax->datum #'part-of-expr))])
          (for-each (lambda (e) 
-                     (interpret-border-expr e fn scope extract)) 
+                     (interpret-border-expr e fn scope str)) 
                    (syntax->list #'(border-expr ...))))]
       
       [[(at location-expr [#:before expr1 ...] [#:after expr2 ...]) border-expr ...]
@@ -315,4 +305,5 @@
                (syntax->list #'((layer layer-id layer-expr ...) ...)))]
     [else
      (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))])
+  (printf "in main: at-inserts=~v\n" at-inserts)
   (list insert-table at-inserts template))
