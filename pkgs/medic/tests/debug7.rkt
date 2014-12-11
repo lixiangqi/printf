@@ -23,7 +23,7 @@
 (layer layer1
        (in #:file "src7.rkt"
            [(fact) 
-            ;[on-entry (printf "fact on entry, x=~v\n" x)]
-            [on-exit (printf "fact on exit, zz=~v\n" zz)]
-            #;[(at (with-start "(* x (fact (sub1 x)))"))
+            [on-entry (printf "fact on entry, x=~v\n" x)]
+            [on-exit (printf "fact on exit, y=~v\n" y)]
+            [(at (with-start "(* x (fact (sub1 x)))"))
              [on-entry (printf "else begin, x=~v\n" x)]]]))

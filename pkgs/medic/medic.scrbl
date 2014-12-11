@@ -11,8 +11,8 @@
 @author["Xiangqi Li"]
 
 The Medic debugger is a debugging tool that incorporates a metaprogramming language to describe the
-task of debugging and a full featured tracing library that enhances the traditional debugging
-technique of inserting print-like expressions. 
+task of debugging and a full featured tracing library to enhances the traditional debugging
+technique of inserting print-like expressions into the source program. 
 
 @section{A Metaprogramming Language}
 
@@ -43,27 +43,27 @@ Here is the grammar for the Medic metaprogramming language:
               insert-expr 
               [each-function insert-expr insert-expr ...]
               [fun-pattern-expr insert-expr insert-expr ...]
-              [(f f ...) insert-expr]]
+              [(f f ...) insert-expr insert-expr ...]]
   [insert-expr border-expr
-               regex-expr]
+               at-expr]
   [border-expr [on-entry source-expr source-expr ...]
                [on-exit source-expr source-expr ...]]
-  [regex-expr [(at location-expr) border-expr border-expr ...]
+  [at-expr [(at location-expr) border-expr border-expr ...]
               [(at location-expr before-expr) border-expr border-expr ...]
               [(at location-expr after-expr) border-expr border-expr ...]
               [(at location-expr before-expr after-expr) border-expr border-expr ...]]
-  [location-expr racket-expression
+  [location-expr target-language-expression
                  at-pattern-expr]
-  [at-pattern-expr (with-start part-of-racket-expression)]
-  [fun-pattern-expr (with-start part-of-racket-function-name)]
+  [at-pattern-expr (with-start part-of-target-language-expression)]
+  [fun-pattern-expr (with-start part-of-target-language-function-name)]
   [before-expr [#:before location-expr location-expr ...]]
   [after-expr [#:after location-expr location-expr ...]]
   [source-expr (ref debug-src-id)
-               racket-expression]
+               target-language-expression]
   [flag boolean]
   [template string]
-  [part-of-racket-expression string]
-  [part-of-racket-function-name string]
+  [part-of-target-language-expression string]
+  [part-of-target-language-function-name string]
   [f variable-not-otherwise-mentioned]
   [id variable-not-otherwise-mentioned]
   [layer-id variable-not-otherwise-mentioned]
@@ -104,23 +104,28 @@ There are some points about the language worth noting:
   @item{The form @racket[(with-behavior f template)] defines the behavior of the @racket[f] function, which is only useful
         when it goes with the tracing @racket[log] function. See @secref["log"] for more information about the usage.}
   @item{The core of the language's power to describe how the source program should exhibit the desirable debugging
-        behaviors is captured by @racket[match-expr], which involves @emph{where} to pinpoint and @emph{what} to do. As
-        the Medic language is intended to be @emph{target-language-independent} that works with most popular programming
+        behaviors is captured by @racket[match-expr], which involves @emph{where} to pinpoint and @emph{what} to do. 
+        
+        As the Medic language is intended to be @emph{target-language-independent} that works with most popular programming
         language as much as possible, a minimum set of scope categories is chosen: module scope and function scope. For 
         example, for the above grammar, the third clause of the @racket[match-expr] non-terminal is within module scope, 
-        and the following three clauses are within function scope. pattern matching function scope
+        and the following three clauses are within function scope. Function scope can be function name exact matching or 
+        pattern matching. The form @racket[(f f ...)] matches one or more function names enclosed in the parenthesis, and
+        @racket[fun-patten-expr] matches a pattern of function names starting with some common characters, which are components
+        of the string @racket[part-of-target-language-function-name] in @racket[(with-start part-of-target-language-function-name)].
+        The debugging primitive @racket[each-function] supports refering to every function defined in 
+        the module. 
         
-        
-        The Medic debugging language designs a function scope
-        primitive @racket[each-function]
-        
-        entry, exit, pattern matching, 
-        function scope primitive,
-        
+        With clear scope declared for debugging, exact location descriptions are supported by @racket[border-expr] and 
+        @racket[at-expr]. The goal of @racket[at-expr] is to facilitate accurately locating the target expression anywhere
+        in the source program. The @racket[location-expr] expression in the form @racket[(at location-expr ....)] can be a 
+        complete expression in the target program or a part of the expression represented by @racket[at-pattern-expr] when
+        the expression is complicated. To avoid the confusions of multiple matches of @racket[location-expr] in the target
+        program, specification of @racket[before-expr] and @racket[after-expr] can be employed to confine the lexical context 
+        of the target expression @racket[location-expr]. If @racket[border-expr] is within @racket[at-expr], the debugging code 
+        @racket[source-expr source-expr ...] is inserted before or after the source expression matched by @racket[at-expr];
+        otherwise, it is inserted at the beginning or the end of a function or module. 
         }
- 
-                                                              
-
 ]
  
 @section{Medic Tracing}
@@ -160,10 +165,66 @@ an instance of the data type is defined as a change to any part of an instance o
 to an object of a class is defined to be a change to any of the object's inherited, private, or public member
 fields.                                                                        
 }
-@section[#:tag "log"]{Tracing Log}
 
-@section{Tracing Graph}
+@section{Evaluation}
 
+@defmodule[medic/core]
+
+@defproc[(medic [path (or/c relative-path? complete-path?)] ...) void?]{
+Evaluates the Medic programs and installs the debugging instructions into the target programs at compile time.
+}
+
+@defproc[(debug [path (or/c relative-path? complete-path?)]) void?]{
+Evaluates the target program indicated by the file path @racket[path] and opens the Medic graphical interface
+showing any debugging traces information.                                                        
+}
+
+@section{Using the Medic Debugger}
+Debugging with the Medic debugger consists of three kinds of programs: source programs, Medic programs, and a 
+debugging script. Medic programs represent debugging instructions about the source programs and a debugging 
+script runs the Medic programs and starts debugging the source programs. After the evaluation of the debugging
+script, a debugging graphical interface is presented, which consists of four panes: a Log pane, Graph pane, 
+Aggregate pane and Timeline pane.
+
+@subsection[#:tag "log"]{Tracing Log}
+Like the traditional print-like expressions, the tracing @racket[log] produces a linear and textual debugging information
+to identify problems in program execution. However, @racket[log] is more advanced than the traditional print-like expression in 
+two ways:
+@itemize[
+  @item{Show the context.}
+  @item{Show the behavior.}
+  ]
+
+Suppose the value of @racket[x] is 3 and we call @racket[(log x)]. Instead of merely printing out the value of @racket[x],
+it prints out ``@racket[x] = 3'', which displays the extra context information of the value 3---it is the variable
+@racket[x] that we are inspecting. 
+
+All traditional print-like expressions are concerned with displaying values of data, but under some debugging 
+circumstances, showing the behavior of data is needed. Consider the following example:
+
+@racketblock[
+(define (f x y)
+  (+ (sqr x) (sqr y)))
+]
+
+When we call @racket[(log (f 3 4))], it produces a tracing log ``(@racket[f] 3 4) = 25'', which presents no information
+about what the @racket[f] function does. To change the behavior of @racket[(log (f 3 4))], we can modify
+the Medic program by adding @racket[(with-behavior f "Calling f: sum of @x squared and @y squared is @,ret")]. The @"@" notation
+provides a way to obtain the values of arguments of a function as well as the function returning value. For example, the above
+@"@"@racket[x] gets the value of @racket[x] and @"@"@racket[,ret] keeps the returning value of the @racket[f] function call. 
+Then the call of @racket[(log (f 3 4))] generates ``Calling f: sum of 3 squared and 4 squared is 25''. The benefits of 
+allowing @racket[log] to show the behavior of functions are that programmers have control over writing the descriptions
+of functions and changing the description at one place can change all behaviors of related function calls at different
+places.
+
+@subsection{Tracing Graph}
+
+
+@subsection{Aggregate View}
+
+@subsection{Timeline View}
+
+@section{Debugging Examples}
 Suppose we have a buggy implementation of the doubly linked list:
 
 @racketblock[
@@ -263,7 +324,3 @@ Suppose we have a buggy implementation of the doubly linked list:
             (set! size (sub1 size))
             res])]))))
 ]
-
-@section{Aggregate View}
-
-@section{Timeline View}

@@ -11,7 +11,7 @@
                     (log y)]]
            [on-exit (log (fact (+ 1 2) "layer1"))]))
 
-(layer layer2
+#;(layer layer2
        (in #:file "src6.rkt"
            [on-entry
             (define (g) (void))

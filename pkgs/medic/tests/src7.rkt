@@ -1,13 +1,11 @@
 #lang racket
 
 (define x 2)
-;(define y 3)
-;(define r 5)
-;(define t 8)
-(define zz 0)
+(define y 3)
+(define r 5)
+(define t 8)
 
 (define (fact x)
-  (define zz 20)
   (if (zero? x)
       1
       (* x 3)))
