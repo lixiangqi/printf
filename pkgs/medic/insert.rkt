@@ -79,7 +79,9 @@
                      [insert-exprs (finer-at-insert-exprs entry)]
                      [scope (finer-at-insert-scope entry)]
                      [predicate (if local?
-                                    (and (member id scope) (member pos at-posns))
+                                    (and (member pos at-posns)
+                                         (or (member "module" scope)
+                                             (member id scope)))
                                     (member pos at-posns))])
                 (if predicate
                     (begin
