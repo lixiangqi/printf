@@ -225,6 +225,55 @@ places.
 @subsection{Timeline View}
 
 @section{Debugging Examples}
+
+@subsection{Learning Medic Language}
+@itemize[
+@item{Basic module-level and function-level insertion of some debugging code.
+        
+@bold{@tt{src1.rkt:}}
+@codeblock{
+#lang racket
+(define z 2)
+(define n 9)
+
+(define (f x)
+  (define z 5)
+  (define n 4)
+  (if (zero? x)
+      1
+      (* x (sub1 x))))
+
+(f 3)
+}
+
+@bold{@tt{src1-medic.rkt:}}
+@codeblock{
+#lang medic
+(layer layer1 
+       (in #:file "src1.rkt"
+           ; module-level border-expr
+           [on-entry (define x 1)
+                     (define y 2)]
+           [on-exit 
+            (log "module exit:")
+            (log y)]
+           ; module-level at-expr
+           [(at (define n 9)) [on-exit (log "module at:")
+                                       (log n)]]
+           ; function-level at-expr and border-expr
+           [(fact) 
+            [(at (with-start "(* x (sub1")) [on-entry (log "else branch:") (log n)]]
+            [on-entry (define y 30)
+                      (log "function entry:")
+                      (log x)
+                      (log y)]
+            [on-exit (log "function exit:")
+                     (log n)]])) 
+}}
+  
+@item{The @racket[at-expr] pattern matching with @racket[before-expr] and @racket[after-expr] specification.}
+
+]
 Suppose we have a buggy implementation of the doubly linked list:
 
 @racketblock[
