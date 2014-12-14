@@ -1,4 +1,4 @@
 #lang info
 
 (define scribblings
-  '(("medic.scrbl" ())))
+  '(("medic.scrbl" (multi-page))))
