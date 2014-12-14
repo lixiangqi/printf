@@ -9,7 +9,8 @@
          get-raw-edges
          get-aggregate-data
          get-timeline-data
-         get-changed-data)
+         get-changed-data
+         browser-visible?)
 
 (define log-data null)
 (define snip-size 30)
@@ -20,14 +21,17 @@
 (define aggre-sequence null)
 (define identifiers null)
 (define changed-table (make-hash))
+(define show-browser? #f)
 
 (define (add-log str layer-id behavior?)
+  (set! show-browser? #t)
   (set! log-data (append log-data (list (list str layer-id behavior?)))))
 
 (define (get-log-data) log-data)
 
 (define (record-aggregate key labels vals)
   (define pairs (map (lambda (l v) (cons l v)) labels vals))
+  (set! show-browser? #t)
   (cond
     [(hash-has-key? aggre-table key)
      (hash-set! aggre-table key (append (hash-ref aggre-table key) (list pairs)))]
@@ -52,9 +56,8 @@
          (hash-set! raw-edges (cons to from) (list e f t bi-directed? (fifth v)))
          (hash-set! raw-edges (cons from to) (list edge-label from-label to-label bi-directed? color)))]
       [else
-       (hash-set! raw-edges (cons from to) (list edge-label from-label to-label bi-directed? color))])))
-
-(define (get-raw-edges) raw-edges)
+       (hash-set! raw-edges (cons from to) (list edge-label from-label to-label bi-directed? color))])
+    (set! show-browser? #t)))
 
 (define (check-equal? v1 v2)
   (cond
@@ -100,6 +103,7 @@
     [else d]))
 
 (define (record-changed id-stx label val)
+  (set! show-browser? #t)
   (define copy (convert-value val))
   (define label-str (format "~a" label))
   (define len (length identifiers))
@@ -116,12 +120,15 @@
           (hash-set! changed-table i (list (list label-str copy #t)))))))
 
 (define (record-timeline key label value boolean?)
+  (set! show-browser? #t)
   (cond
     [(hash-has-key? timeline-table key)
      (hash-set! timeline-table key (append (hash-ref timeline-table key) (list (list label value boolean?))))]
     [else
      (set! timeline-sequence (append timeline-sequence (list key)))
      (hash-set! timeline-table key (list (list label value boolean?)))]))
+
+(define (get-raw-edges) raw-edges)
 
 (define (get-timeline-data)
   (define data (for/list ([i timeline-sequence])
@@ -149,3 +156,5 @@
   (set! identifiers null)
   (set! changed-table #f)
   data)
+
+(define (browser-visible?) show-browser?)

@@ -15,8 +15,9 @@
 (provide make-trace-browser)
 
 (define (make-trace-browser fn)
-  (define frame (new trace-frame% [filename fn]))
-  (send frame show #t))
+  (when (browser-visible?)
+    (define frame (new trace-frame% [filename fn]))
+    (send frame show #t)))
 
 (define trace-frame%
   (class (frame:basic-mixin frame%)
