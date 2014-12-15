@@ -127,7 +127,6 @@
                    #,@new-bodies)))]))
      
       (define (log-expression-annotator e label layer-id)
-        (printf "log : e=~v\n" e )
         (define (lookup-var args vals var)
           (let loop ([i 0])
             (if (< i (length args))
@@ -209,22 +208,6 @@
                           (format "~a" to-label)
                           color))]))
       
-      (define (find-bound-var/wrap-context var lst)
-        (define (find-bound-var var-lst)
-          (define ret #f)
-          (let iterate ([vlst var-lst])
-            (unless (null? vlst)
-              (let ([bound (car vlst)])
-                (if (equal? (syntax->datum var) (syntax->datum bound))
-                    (set! ret (datum->syntax bound (syntax->datum var)))
-                    (iterate (cdr vlst))))))
-          ret)
-        
-        (define ret (find-bound-var lst))
-        (unless ret
-          (set! ret (find-bound-var top-level-ids)))
-        ret)
-      
       (define (get-syntax-property e key)
         (or (syntax-property e key)
             (syntax-property (cadr (syntax->list e)) key)))
@@ -235,9 +218,7 @@
          (kernel:kernel-syntax-case*
           (disarm expr) #f (log aggregate edge timeline assert same?)
           [var-stx (identifier? (syntax var-stx)) 
-                   (if (syntax-property #'var-stx 'medic)
-                       (or (find-bound-var/wrap-context #'var-stx bound-vars) expr)
-                       expr)]
+           expr]
           
           [(#%plain-lambda . clause)
            (quasisyntax/loc expr 

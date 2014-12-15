@@ -45,6 +45,7 @@
     (printf "at-table=~v\n" at-table)
     (define top-level-ids '())
     (define let-exit '())
+    (define internal-let? #f)
     (define (add-top-level-id var)
       (set! top-level-ids (append (list var) top-level-ids))) 
     
@@ -57,7 +58,7 @@
               (if (syntax->list new-stx)
                   (map (lambda (i) 
                          (if (identifier? i)
-                             (syntax-property (syntax-property (syntax-property i 'medic #t) 'layer layer-prop)
+                             (syntax-property (syntax-property i 'layer layer-prop)
                                               'stamp stamp-prop)
                              i)) 
                        (syntax->list new-stx))
@@ -265,6 +266,7 @@
                              #,@(map (lambda (e) (wrap-context e (append all-bindings top-level-ids) id))
                                      let-exit))))))
             (set! let-exit 'no-exit-exprs)
+            (set! internal-let? #t)
             final-body)]))
       
       (define (lambda-clause-annotator clause)
@@ -274,13 +276,12 @@
           (let* ([new-bound-vars (arglist-bindings #'arg-list)]
                  [all-bound-vars (append new-bound-vars bound-vars)]
                  [bindings (append all-bound-vars top-level-ids)]
-                 [body-list (syntax->list #'bodies)]
-                 [internal-let? #f])
+                 [body-list (syntax->list #'bodies)])
             (define-values (entry-exprs exit-exprs) (get-lambda-exit-entry-inserts id))
             (set! let-exit 'no-exit-exprs)
+            (set! internal-let? #f)
             (when (and (= (length body-list) 1) (not (null? exit-exprs)))
-              (set! let-exit exit-exprs)
-              (set! internal-let? #t))
+              (set! let-exit exit-exprs))
             (define new-bodies (map (lambda (e) (expression-iterator e all-bound-vars id)) body-list))
             (define with-entry-body (quasisyntax/loc clause
                                       (arg-list
@@ -294,7 +295,6 @@
                                       #,@new-bodies
                                       #,@(map (lambda (e) (wrap-context e bindings id))
                                               exit-exprs))))
-            
             (if (null? exit-exprs)
                 with-entry-body
                 (if internal-let?
