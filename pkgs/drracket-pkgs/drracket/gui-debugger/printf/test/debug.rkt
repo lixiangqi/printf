@@ -6,8 +6,8 @@
            [(g)
             [on-entry 
              (log x)
-             #;(log @function-name)
-             ;(log "x = ~a\n" x)
+             (log @function-name)
+             (log "x: ~a" x)
              (log "x: ~a, counter: ~a, function-name: ~a\n" x counter @function-name)
              ]]
             ))

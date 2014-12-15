@@ -276,6 +276,10 @@
       [(log v)
        (attach-stx-property stx #'v)]
       
+      [(log v1 v2 ...)
+       (syntax-property (syntax-property stx 'layer current-layer-id)
+                        'stamp (cons #f #f))]
+      
       [(aggregate) 
        (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]
       

@@ -140,6 +140,11 @@
           (if (null? from)
               str
               (substitute-val (string-replace str (car from) (car to)) (cdr from) (cdr to))))
+        
+        (define (fill-val str vals)
+          (if (null? vals)
+              str
+              (fill-val (string-replace str "~a" (car vals) #:all? #f) (cdr vals))))
                  
         (syntax-case e ()
           [(id) (identifier? #'id)
@@ -174,7 +179,7 @@
            (quasisyntax/loc e (#,add-log (format "~v" other-exp) '#,layer-id #f))]
           [(v1 v2 ...)
            (quasisyntax/loc e
-             (printf "log v entered: v1 = ~v, rest=~v\n" (string? v1) (list v2 ...)))]))
+             (#,add-log (#,fill-val v1 (map (lambda (i) (format "~a" i)) (list v2 ...))) '#,layer-id #f))]))
         
       (define (edge-expression-annotator e)
         (syntax-case e ()
@@ -272,8 +277,7 @@
                                    #,(annotate #'body bound-vars id)))]
           
           [(#%plain-app log . data)
-           (log-expression-annotator #'data #f (format "~a" #f))
-           #;(let ([label (cdr (get-syntax-property expr 'stamp))])
+           (let ([label (cdr (get-syntax-property expr 'stamp))])
              (log-expression-annotator #'data label (format "~a" (get-syntax-property expr 'layer))))]
           
           [(#%plain-app aggregate v ...)
