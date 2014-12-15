@@ -148,7 +148,7 @@
                         (let* ([arg-values (list #,@args)]
                                [ret-value (format "~v" (apply #,fun arg-values))]
                                [replaces (map (lambda (a)
-                                                (format "~v" (#,lookup-var (list #,@fun-args) arg-values (string-trim a "@"))))
+                                                (format "~v" (#,lookup-var (list #,@fun-args) arg-values (string-trim a "@,"))))
                                               (list #,@template-at-args))]
                                [str (#,substitute-val #,template-str (list #,@template-at-args) replaces)]
                                [final-str (if #,template-ret (#,string-replace str #,template-ret ret-value) str)])

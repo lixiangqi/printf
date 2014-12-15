@@ -4,6 +4,7 @@
 
 (provide (rename-out [module-begin #%module-begin])
          define log
+         #%app #%top require #%datum
          #%top-interaction)
 
 
@@ -125,8 +126,8 @@
       [(with-behavior f s)
        (let* ([fun (syntax->datum #'f)]
               [str (format "~a" (syntax->datum #'s))]
-              [at-args (remove-duplicates (regexp-match* #px"@\\w+" str))]
-              [at-ret (remove-duplicates (regexp-match* #px"@,\\w+" str))]
+              [at-args (remove-duplicates (regexp-match* #px"@,\\w+" str))]
+              [at-ret (remove-duplicates (regexp-match* #px"@\\w+" str))]
               [ret (if (null? at-ret) #f (car at-ret))]
               [table (hash-ref template fn)])
          (hash-set! table fun (list str at-args ret)))]
