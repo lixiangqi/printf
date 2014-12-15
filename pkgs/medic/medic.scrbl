@@ -3,6 +3,7 @@
 @(require scribble/manual
           redex/pict
           scriblib/figure
+          scribble/eval
           (for-label (except-in racket log export import)
                      racket/contract/base
                      medic/trace))
@@ -100,9 +101,21 @@ There are some points about the language worth noting:
         (in #:file (file "/home/xiangqi/test/src.rkt" ....))
         (code:comment "a library path")
         (in #:file test/src ....)
-        ]} 
+        ]}
   @item{The form @racket[(with-behavior f template)] defines the behavior of the @racket[f] function, which is only useful
         when it goes with the tracing @racket[log] function. See @secref["log"] for more information about the usage.}
+  @item{The @"@" notation provides a way to distinguish primitives in the debugging code from the source code and allows programmers
+        to access some debugging primitives only available to the debugger. Currently there are three kinds of debugging 
+        primitives: @"@"@racket[function-name], @"@"@racket[ret], and @"@"@racket[,par] where @racket[par] represents one parameter of 
+        a function.
+        
+        The @"@"@racket[function-name] primitive exposes the run-time function scope to programmers. For example, the
+        form 
+        
+        [@racket[each-function] [@racket[on-entry] (@racket[log] @racket["function ~a entered"] @"@"@racket[function-name])]]
+        
+        helps keep track of 
+       }
   @item{The core of the language's power to describe how the source program should exhibit the desirable debugging
         behaviors is captured by @racket[match-expr], which involves @emph{where} to pinpoint and @emph{what} to do. 
         
@@ -113,9 +126,11 @@ There are some points about the language worth noting:
         pattern matching. The form @racket[(f f ...)] matches one or more function names enclosed in the parenthesis, and
         @racket[fun-patten-expr] matches a pattern of function names starting with some common characters, which are components
         of the string @racket[part-of-target-language-function-name] in @racket[(with-start part-of-target-language-function-name)].
-        The debugging primitive @racket[each-function] supports refering to every function defined in 
+        The debugging primitive @racket[each-function] supports referring to every function defined in 
         the module. 
-        
+        @margin-note{When the target language is Racket, the @racket[location-expr] anchor expression in the 
+        form @racket[(at location-expr ....)] cannot be the internal definition, such as @racket[(define ....)] form inside a 
+        function or @racket[(let ....)] local binding form.}
         With clear scope declared for debugging, exact location descriptions are supported by @racket[border-expr] and 
         @racket[at-expr]. The goal of @racket[at-expr] is to facilitate accurately locating the target expression anywhere
         in the source program. The @racket[location-expr] expression in the form @racket[(at location-expr ....)] can be a 
@@ -124,7 +139,11 @@ There are some points about the language worth noting:
         program, specification of @racket[before-expr] and @racket[after-expr] can be employed to confine the lexical context 
         of the target expression @racket[location-expr]. If @racket[border-expr] is within @racket[at-expr], the debugging code 
         @racket[source-expr source-expr ...] is inserted before or after the source expression matched by @racket[at-expr];
-        otherwise, it is inserted at the beginning or the end of a function or module. 
+        otherwise, it is inserted at the beginning or the end of a function or module. When there are multiple @racket[match-expr]s
+        that contains to-be-inserted debugging code @racket[a], @racket[b], and @racket[c] individually and all requires to be added
+        before the same source expression @racket[d], the order of the final modified program will be @racket[c b a d]. On the 
+        contrary, when they are all after the expression @racket[d], the order will be @racket[d a b c].
+        
         }
 ]
  
@@ -180,7 +199,8 @@ showing any debugging traces information.
 }
 
 @section{Using the Medic Debugger}
-Debugging with the Medic debugger consists of three kinds of programs: source programs, Medic programs, and a 
+Debugging with the Medic debugger consists of three kinds of programs: source programs, Medic programs (by convention
+ending with ``-medic.rkt''), and a 
 debugging script. Medic programs represent debugging instructions about the source programs and a debugging 
 script runs the Medic programs and starts debugging the source programs. After the evaluation of the debugging
 script, a debugging graphical interface is presented, which consists of four panes: a Log pane, Graph pane, 
@@ -209,9 +229,9 @@ circumstances, showing the behavior of data is needed. Consider the following ex
 
 When we call @racket[(log (f 3 4))], it produces a tracing log ``(@racket[f] 3 4) = 25'', which presents no information
 about what the @racket[f] function does. To change the behavior of @racket[(log (f 3 4))], we can modify
-the Medic program by adding @racket[(with-behavior f "Calling f: sum of @x squared and @y squared is @,ret")]. The @"@" notation
+the Medic program by adding @racket[(with-behavior f "Calling f: sum of @,x squared and @,y squared is @ret")]. The @"@" notation
 provides a way to obtain the values of arguments of a function as well as the function returning value. For example, the above
-@"@"@racket[x] gets the value of @racket[x] and @"@"@racket[,ret] keeps the returning value of the @racket[f] function call. 
+@"@"@racket[,x] gets the value of @racket[x] and @"@"@racket[ret] keeps the returning value of the @racket[f] function call. 
 Then the call of @racket[(log (f 3 4))] generates ``Calling f: sum of 3 squared and 4 squared is 25''. The benefits of 
 allowing @racket[log] to show the behavior of functions are that programmers have control over writing the descriptions
 of functions and changing the description at one place can change all behaviors of related function calls at different
@@ -224,9 +244,30 @@ places.
 
 @subsection{Timeline View}
 
-@section{Debugging Examples}
+@section{Medic by Example}
+
+This section covers several small examples of demonstrating the usage and usefulness of the Medic debugger.
+Each example contains a source program and a medic program. Assuming the source program is @tt{src.rkt} and the medic
+program is @tt{src-medic.rkt} and the source program, medic program and debugging script are stored in the same
+directory, we can start debugging by the following debugging script:
+@codeblock{
+#lang racket
+(require medic/core)
+(medic "src-medic.rkt")
+(debug "src.rkt")
+}
+
+We can also run debugging scripts in the console window of the DrRacket programming environment. To best locate
+the files, complete paths of programs---depending on the stored location---should be supplied.
+
+@smaller{>} @racket[(require medic/core)]
+
+@smaller{>} @racket[(medic "/home/xiangqi/medic/demos/src-medic.rkt")]
+
+@smaller{>} @racket[(debug "/home/xiangqi/medic/demos/src.rkt")]
 
 @subsection[#:style '(toc)]{Learning the Medic Language}
+
 @local-table-of-contents[]
 @subsubsection{Demo 1: @tt{border-expr} and @tt{at-expr}}
 Basic module-level and function-level insertion of some debugging code.
@@ -320,7 +361,39 @@ The @racket[at-expr] pattern matching with @racket[before-expr] and @racket[afte
             (on-entry (log "[6]use with-start matching (inc-counter) in g"))]))
 }
 @subsubsection{Demo 3: multiple functions scope}
+Multiple functions involved in the debugging activity.
 
+@bold{@tt{src3.rkt:}}
+@codeblock{
+#lang racket
+
+(define counter 0)
+
+(define (inc-counter) (set! counter (add1 counter)))
+
+(define (inc x) 
+  (inc-counter)
+  (+ x 1))
+
+(define (g x)
+  (inc x))
+
+(g 4)
+}
+
+@bold{@tt{src3-medic.rkt:}}
+@codeblock{
+#lang medic
+
+(layer layer1 
+       (in #:file "src3.rkt"
+           ; scope of multiple functions 
+           [(g inc) [on-entry (log "function ~a: x = ~a" @"@"function-name x)]]
+           ; fun-pattern-expr
+           [(with-start "inc") [on-entry (log "function ~a with starting inc function name" @"@"function-name)]]
+           ; each-function primitive
+           [each-function [on-entry (log "function ~a entered" @"@"function-name)]]))
+}
 @subsection{Debugging via the Tracing Library}
 
 Suppose we have a buggy implementation of the doubly linked list:
