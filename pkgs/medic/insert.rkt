@@ -19,27 +19,29 @@
       [(var . others)
        (cons #'var (arglist-bindings #'others))]))
   
-  (define (wrap-context stx bindings)
+  (define (wrap-context stx bindings function-id)
     (define (lookup id)
       (findf (lambda (v)
                (equal? (syntax->datum id) (syntax->datum v)))
              bindings))
     (cond
       [(identifier? stx)
-       ;(printf "wrap-context stx=~v, bindings=~v\n" stx bindings)
-       (let ([bound (lookup stx)])
-         (if bound
-             (datum->syntax bound (syntax->datum stx) stx stx)
-             stx))]
+       (if (and (syntax? stx) (equal? (syntax->datum stx) '@function-name))
+           (datum->syntax #f function-id)
+           (let ([bound (lookup stx)])
+             (if bound
+                 (datum->syntax bound (syntax->datum stx) stx stx)
+                 stx)))]
       [(syntax? stx)
-       (wrap-context (syntax-e stx) bindings)]
+       (wrap-context (syntax-e stx) bindings function-id)]
       [(pair? stx)
-       (cons (wrap-context (car stx) bindings)
-             (wrap-context (cdr stx) bindings))]
+       (cons (wrap-context (car stx) bindings function-id)
+             (wrap-context (cdr stx) bindings function-id))]
       [else stx]))
   
   (define (insert-stx stx insert-table at-table)
     (printf "insert-stx=~v\n" stx)
+    (printf "insert-table=~v\n" insert-table)
     (printf "at-table=~v\n" at-table)
     (define top-level-ids '())
     (define let-exit '())
@@ -97,7 +99,7 @@
                         [(entry) 
                          (iterate (rest lst)
                                   (syntax-property (quasisyntax/loc old-stx (begin #,@(map (lambda (e)
-                                                                                             (wrap-context (convert-stx e) before-ids))
+                                                                                             (wrap-context (convert-stx e) before-ids id))
                                                                                            insert-exprs)
                                                                                    #,result-stx))
                                                    'debug #t))]
@@ -105,7 +107,7 @@
                          (iterate (rest lst)
                                   (syntax-property (quasisyntax/loc old-stx (begin #,result-stx
                                                                                    #,@(map (lambda (e)
-                                                                                             (wrap-context (convert-stx e) after-ids))
+                                                                                             (wrap-context (convert-stx e) after-ids id))
                                                                                            insert-exprs)))
                                                    'debug #t))]))
                     (iterate (rest lst) result-stx))))))
@@ -162,7 +164,7 @@
                                              #,@entry-exprs
                                              #,@(map (lambda (e) (module-level-expr-iterator e))
                                                      (syntax->list #'module-level-exprs))
-                                             #,@(map (lambda (e) (wrap-context e top-level-ids))
+                                             #,@(map (lambda (e) (wrap-context e top-level-ids #f))
                                                   exit-exprs)))))])))])]))
     
   
@@ -260,7 +262,7 @@
                     (quasisyntax/loc expr
                       (label (((var ...) new-rhs/trans) ...)
                              #,@bodies
-                             #,@(map (lambda (e) (wrap-context e (append all-bindings top-level-ids)))
+                             #,@(map (lambda (e) (wrap-context e (append all-bindings top-level-ids) id))
                                      let-exit))))))
             (set! let-exit 'no-exit-exprs)
             final-body)]))
@@ -282,15 +284,15 @@
             (define new-bodies (map (lambda (e) (expression-iterator e all-bound-vars id)) body-list))
             (define with-entry-body (quasisyntax/loc clause
                                       (arg-list
-                                       #,@(map (lambda (e) (wrap-context e bindings))
+                                       #,@(map (lambda (e) (wrap-context e bindings id))
                                                entry-exprs)
                                        #,@new-bodies)))
             (define with-exit-body (quasisyntax/loc clause
                                      (arg-list
-                                      #,@(map (lambda (e) (wrap-context e bindings))
+                                      #,@(map (lambda (e) (wrap-context e bindings id))
                                               entry-exprs)
                                       #,@new-bodies
-                                      #,@(map (lambda (e) (wrap-context e bindings))
+                                      #,@(map (lambda (e) (wrap-context e bindings id))
                                               exit-exprs))))
             
             (if (null? exit-exprs)

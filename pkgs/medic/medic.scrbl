@@ -15,7 +15,7 @@ task of debugging and a full featured tracing library to enhances the traditiona
 technique of inserting print-like expressions into the source program. 
 @local-table-of-contents[]
 @section{A Metaprogramming Language}
-
+@defmodulelang[medic]
 The Medic debugger treats the debugging as a metaprogramming activity, where the programmer writes
 a debugging program about the target program to make invisible states of the source program visible.
 The separation of a debugging program from a source program enables reusability and programmability
@@ -226,9 +226,9 @@ places.
 
 @section{Debugging Examples}
 
-@subsection[#:style '(toc)]{Learning Medic Language}
+@subsection[#:style '(toc)]{Learning the Medic Language}
 @local-table-of-contents[]
-@subsubsection{Demo 1}
+@subsubsection{Demo 1: @tt{border-expr} and @tt{at-expr}}
 Basic module-level and function-level insertion of some debugging code.
 
 @bold{@tt{src1.rkt:}}
@@ -271,7 +271,7 @@ Basic module-level and function-level insertion of some debugging code.
             [on-exit (log "function exit:")
                      (log n)]])) 
 }
-@subsubsection{Demo 2}
+@subsubsection{Demo 2: @tt{at-expr}}
 The @racket[at-expr] pattern matching with @racket[before-expr] and @racket[after-expr] specification.
 
 @bold{@tt{src2.rkt:}}
@@ -319,6 +319,7 @@ The @racket[at-expr] pattern matching with @racket[before-expr] and @racket[afte
            [(at (inc-counter) [#:before (with-start "(define x (inc")] [#:after (+ x 1)])
             (on-entry (log "[6]use with-start matching (inc-counter) in g"))]))
 }
+@subsubsection{Demo 3: multiple functions scope}
 
 @subsection{Debugging via the Tracing Library}
 
