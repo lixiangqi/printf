@@ -48,27 +48,34 @@
     (define let-exit '())
     (define internal-let? #f)
     (define (add-top-level-id var)
-      (set! top-level-ids (append (list var) top-level-ids))) 
+      (set! top-level-ids (append (list var) top-level-ids)))
     
     ; convert-stx gives library identifier the proper racket bindings
     (define (convert-stx stx)
-      (define (convert s)
-        (let* ([new-stx (strip-context s)]
-               [layer-prop (syntax-property s 'layer)]
-               [stamp-prop (syntax-property s 'stamp)]
-               [tagged 
-                (if (syntax->list new-stx)
-                    (map (lambda (i) 
-                           (if (identifier? i)
-                               (syntax-property (syntax-property i 'layer layer-prop)
-                                                'stamp stamp-prop)
-                               i)) 
-                         (syntax->list new-stx))
-                    new-stx)])
-          (datum->syntax #f tagged s s)))
+      
+      (define (handle-single s)
+        (define res (convert (strip-context s) (syntax-property s 'layer) (syntax-property s 'stamp)))
+        (datum->syntax #f res s s))
+      
+      (define (convert s layer-prop stamp-prop)
+        (cond
+          [(identifier? s)
+           (syntax-property (syntax-property s 'layer layer-prop) 'stamp stamp-prop)]
+          [(syntax? s)
+           (convert (syntax-e s) layer-prop stamp-prop)]
+          [(pair? s)
+           (let* ([first (car s)]
+                  [second (cdr s)]
+                  [layer (and (syntax? first) (syntax-property first 'layer))]
+                  [stamp (and (syntax? first) (syntax-property first 'stamp))])
+             (if (and (null? second) (syntax? first))
+                 (cons (convert (car s) layer stamp) (convert (cdr s) layer stamp))
+                 (cons (convert (car s) layer-prop stamp-prop) (convert (cdr s) layer-prop stamp-prop))))]
+          [else s]))
+      
       (if (list? stx)
-          #`(begin #,@(map convert stx))
-          (convert stx)))
+          #`(begin #,@(map handle-single stx))
+          (handle-single stx)))
     
     ; when local? is #t, match at-pattern expression within function scope
     (define (match-at-table old-stx new-stx local? [bounds '()] [before-bounds '()] [after-bounds '()] [id #f])
