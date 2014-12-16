@@ -50,20 +50,24 @@
       (set! top-level-ids (append (list var) top-level-ids))) 
     
     ; convert-stx gives library identifier the proper racket bindings
-    (define (convert-stx s)
-      (let* ([new-stx (strip-context s)]
-             [layer-prop (syntax-property s 'layer)]
-             [stamp-prop (syntax-property s 'stamp)]
-             [tagged 
-              (if (syntax->list new-stx)
-                  (map (lambda (i) 
-                         (if (identifier? i)
-                             (syntax-property (syntax-property i 'layer layer-prop)
-                                              'stamp stamp-prop)
-                             i)) 
-                       (syntax->list new-stx))
-                  new-stx)])
-        (datum->syntax #f tagged s s)))
+    (define (convert-stx stx)
+      (define (convert s)
+        (let* ([new-stx (strip-context s)]
+               [layer-prop (syntax-property s 'layer)]
+               [stamp-prop (syntax-property s 'stamp)]
+               [tagged 
+                (if (syntax->list new-stx)
+                    (map (lambda (i) 
+                           (if (identifier? i)
+                               (syntax-property (syntax-property i 'layer layer-prop)
+                                                'stamp stamp-prop)
+                               i)) 
+                         (syntax->list new-stx))
+                    new-stx)])
+          (datum->syntax #f tagged s s)))
+      (if (list? stx)
+          #`(begin #,@(map convert stx))
+          (convert stx)))
     
     ; when local? is #t, match at-pattern expression within function scope
     (define (match-at-table old-stx new-stx local? [bounds '()] [before-bounds '()] [after-bounds '()] [id #f])
