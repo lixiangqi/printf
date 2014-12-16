@@ -2,6 +2,7 @@
   
   (require (prefix-in kernel: syntax/kerncase)
            racket/list
+           racket/string
            (for-syntax scheme/base)
            (only-in mzscheme [apply plain-apply])
            syntax/strip-context
@@ -229,7 +230,8 @@
                                      (hash->list insert-table))])
               (for-each 
                (lambda (p)
-                 (when (regexp-match (string-append "^" (cdar p)) id)
+                 (define str (string-replace (string-replace (cdar p) "(" "\\(") ")" "\\)"))
+                 (when (regexp-match (string-append "^" str) id)
                    (set! entry-exprs (append (match-border-insert (car p) 'entry) entry-exprs))
                    (set! exit-exprs (append (match-border-insert (car p) 'exit) exit-exprs))))
                start-lst))))
