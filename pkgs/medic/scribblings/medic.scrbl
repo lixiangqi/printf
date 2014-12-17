@@ -389,11 +389,52 @@ implementation.
               (log "after removal: i=~a, datum=~a" i (send dlist element-at i)))]))
 }
 
-We are presented with a graphical window containing a Log pane:
+We are presented with a trace browser window containing a Log pane:
 @centered{@image{scribblings/log.png}}
 It seems like there is something wrong with the removal operation---the final list should be the sequence 0, 1, 2, 8, 9 
-instead of 0, 1, 2, 4, 5. The tracing logs give us little clue about what the problem is, for 
-
+instead of 0, 1, 2, 4, 5. The tracing logs give us little clue about the cause of the problem, and it requires a 
+substantial amount of time to set a breakpoint to step though the program and examine the @racket[previous] and
+@racket[next] references of each node. But if we modify the Medic program by trying the tracing graph, we can see
+the problem instantly.
+@codeblock{
+#lang medic
+;; disable this layer first
+(layer layer1 #:enable #f
+       (in #:file "doubly-linked-list.rkt"
+           [on-exit
+            (define dlist (new doubly-linked-list%))
+            ; add ten elements
+            (for ([i (reverse (build-list 10 values))]) (send dlist add-at 0 i))
+            (for ([i (in-range (send dlist get-size))])
+              (log "i=~a, datum=~a" i (send dlist element-at i)))
+            
+            ; remove five successive elements starting from the fourth element
+            (for ([i (in-range 5)]) (send dlist remove 3))
+            (for ([i (in-range (send dlist get-size))])
+              (log "after removal: i=~a, datum=~a" i (send dlist element-at i)))]))
+              
+;; add a new layer using graph visualization
+(layer layer2
+       (in #:file "doubly-linked-list.rkt"
+           [on-exit
+            (define dlist (new doubly-linked-list%))
+            (for ([i (reverse (build-list 10 values))]) (send dlist add-at 0 i))
+            (for ([i (in-range 5)]) (send dlist remove 3))
+            (for/fold ([temp (get-field head dlist)]) 
+              ([i (in-range (sub1 (send dlist get-size)))])
+              (define next (get-field next temp))
+              ; draw an edge from the current node to its next referencing node with the red arrow color
+              (edge temp next "" (get-field datum temp) (get-field datum next) "Red")
+              next)
+            (for/fold ([temp (get-field next (get-field head dlist))])
+              ([i (in-range (sub1 (send dlist get-size)))])
+              (define prev (get-field previous temp))
+              ; draw an edge from the current node to its previous referencing node with the default gray arrow color
+              (edge temp prev "" (get-field datum temp) (get-field datum prev))
+              (get-field next temp))]))
+}
+We restart the debugging session and the trace browser is opened where the edges and nodes are visualized in the Graph pane.
+@centered{@image{scribblings/graph.png}}
 @subsection{Aggregate View}
 
 @subsection{Timeline View}
