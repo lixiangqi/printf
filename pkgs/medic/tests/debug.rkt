@@ -2,9 +2,5 @@
 
 (require medic/core)
 
-;(medic "doubly-linked-list-medic.rkt")
-;(debug "doubly-linked-list.rkt")
-
-(medic "debug7.rkt")
-(debug "src7.rkt")
-                                     
+(medic "doubly-linked-list-medic.rkt")
+(debug "doubly-linked-list.rkt")

@@ -93,7 +93,7 @@
             (define temp-prev (get-field previous temp))
             (define temp-next (get-field next temp))
             (set-field! next temp-prev temp-next)
-            ;(set-field! previous temp-next temp-prev)
+            (set-field! previous temp-next temp-prev)
             (set! size (sub1 size))
             res])]))))
 

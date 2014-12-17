@@ -1,14 +1,10 @@
 #lang racket
 
-(define counter 0)
+(require "f.rkt")
 
-(define (inc-counter) (set! counter (add1 counter)))
-
-(define (inc x) 
-  (inc-counter)
-  (+ x 1))
+(define t 5)
 
 (define (g x)
-  (inc x))
+  (* x (f x t)))
 
-(g 4)
+(g 3)

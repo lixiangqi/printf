@@ -226,7 +226,7 @@
        (let ([found (hash-ref src-table (syntax->datum #'src-id) #f)])
          (cond
            [found 
-            (interpret-border-expr (syntax/loc stx [on-entry found]) fn scope target-exp before after)]
+            (interpret-border-expr (quasisyntax/loc stx [on-entry #,@found]) fn scope target-exp before after)]
            [else
             (error 'refer-to-unbound-variable "id = ~a in expr = ~a\n" (syntax->datum #'src-id) (syntax->datum stx))]))]
       
