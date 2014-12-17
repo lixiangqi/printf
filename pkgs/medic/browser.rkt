@@ -129,7 +129,8 @@
     (new message% [parent graph-panel] [label "Graph"])
     (define-values (graph-width graph-height) (send graph-panel get-size))
     (define graph-pb (new graph-pasteboard%
-                          [raw-edges (get-raw-edges)]
+                          [raw-nodes (car (get-raw-graph))]
+                          [raw-edges (cdr (get-raw-graph))]
                           [width graph-width]
                           [height graph-height]))
     (new editor-canvas%

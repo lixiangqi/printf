@@ -162,7 +162,19 @@
           [(v1 v2 ...)
            (quasisyntax/loc e
              (#,add-log (#,fill-val v1 (map (lambda (i) (format "~a" i)) (list v2 ...))) '#,layer-id #f))]))
-        
+      
+      (define (node-expression-annotator e)
+        (syntax-case e ()
+          [(n)
+           (quasisyntax/loc e
+             (#%plain-app #,add-node n "" #f))]
+          [(n node-label)
+           (quasisyntax/loc e
+             (#%plain-app #,add-node n (format "~a" node-label) #f))]
+          [(n node-label color)
+           (quasisyntax/loc e
+             (#%plain-app #,add-node n (format "~a" node-label) color))]))
+      
       (define (edge-expression-annotator e)
         (syntax-case e ()
           [(from to)
@@ -171,24 +183,23 @@
           [(from to edge-label)
            (quasisyntax/loc e
              (#%plain-app #,add-edge from to (format "~a" edge-label) "" "" #f))]
-          [(from to edge-label from-label)
+          [(from to edge-label color)
            (quasisyntax/loc e
              (#%plain-app #,add-edge from to 
                           (format "~a" edge-label)
-                          (format "~a" from-label) "" #f))]
-          [(from to edge-label from-label to-label)
+                          "" ""
+                          color))]
+          [(from to edge-label color from-label)
            (quasisyntax/loc e
              (#%plain-app #,add-edge from to 
                           (format "~a" edge-label)
-                          (format "~a" from-label)
-                          (format "~a" to-label)
-                          #f))]
-          [(from to edge-label from-label to-label color)
+                          (format "~a" from-label) ""
+                          color))]
+          [(from to edge-label color from-label to-label)
            (quasisyntax/loc e
              (#%plain-app #,add-edge from to 
                           (format "~a" edge-label)
-                          (format "~a" from-label)
-                          (format "~a" to-label)
+                          (format "~a" from-label) (format "~a" to-label)
                           color))]))
       
       (define (get-syntax-property e key)
@@ -199,7 +210,7 @@
         (rearm
          expr
          (kernel:kernel-syntax-case*
-          (disarm expr) #f (log aggregate edge timeline assert same?)
+          (disarm expr) #f (log aggregate node edge timeline assert same?)
           [var-stx (identifier? (syntax var-stx)) 
            expr]
           
@@ -250,6 +261,9 @@
                   [labels (cdr stamp)])
              (quasisyntax/loc expr
                (#,record-aggregate #,id (list #,@labels) (list v ...))))]
+          
+          [(#%plain-app node . args)
+           (node-expression-annotator #'args)]
           
           [(#%plain-app edge . args)
            (edge-expression-annotator #'args)]

@@ -3,6 +3,7 @@
 (provide log 
          aggregate
          edge
+         node
          timeline
          assert
          same?)
@@ -11,7 +12,8 @@
 
 (define (aggregate v . vs) (void))
 
-(define (edge from to [edge-label ""] [from-label ""] [to-label ""] [color #f]) (void))
+(define (edge from to [edge-label ""] [color #f] [from-label ""] [to-label ""] ) (void))
+(define (node n [node-label ""] [color #f]) (void))
 
 (define (timeline e) (void))
 

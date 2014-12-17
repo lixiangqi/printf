@@ -1,12 +1,13 @@
 #lang racket
 
 (provide add-log
+         add-node
          add-edge
          record-aggregate
          record-timeline
          record-changed
          get-log-data
-         get-raw-edges
+         get-raw-graph
          get-aggregate-data
          get-timeline-data
          get-changed-data
@@ -15,6 +16,7 @@
 (define log-data null)
 (define snip-size 30)
 (define raw-edges (make-hash))
+(define raw-nodes '())
 (define timeline-table (make-hash))
 (define timeline-sequence null)
 (define aggre-table (make-hash))
@@ -38,6 +40,9 @@
     [else
      (set! aggre-sequence (append aggre-sequence (list key)))
      (hash-set! aggre-table key (list pairs))]))
+
+(define (add-node n node-label color)
+  (set! raw-nodes (append raw-nodes (list (list n node-label color)))))
 
 (define (add-edge from to edge-label from-label to-label color)
   (define (valid-string? s)
@@ -128,7 +133,7 @@
      (set! timeline-sequence (append timeline-sequence (list key)))
      (hash-set! timeline-table key (list (list label value boolean?)))]))
 
-(define (get-raw-edges) raw-edges)
+(define (get-raw-graph) (cons raw-nodes raw-edges))
 
 (define (get-timeline-data)
   (define data (for/list ([i timeline-sequence])

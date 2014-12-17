@@ -11,10 +11,10 @@
 (define node-size 20)
 (define radius (/ node-size 2))
 
-(define (create-node-bitmap label w)
+(define (create-node-bitmap label color w)
   (define bm (make-object bitmap% (inexact->exact (ceiling (+ w w node-size))) node-size #f #t))
   (define bm-dc (new bitmap-dc% [bitmap bm]))
-  (send bm-dc set-brush "DodgerBlue" 'solid)
+  (send bm-dc set-brush (or color "DodgerBlue") 'solid)
   (send bm-dc set-pen "Light Gray" 0 'solid)
   (send bm-dc draw-ellipse w 0 node-size node-size)
   (send bm-dc draw-text label (+ w node-size) 0)
@@ -29,7 +29,8 @@
 
 (define graph-pasteboard%
   (class (graph-pasteboard-mixin pasteboard%)
-    (init-field [raw-edges #f] 
+    (init-field [raw-nodes #f]
+                [raw-edges #f]
                 [width #f]
                 [height #f])
     (inherit insert
@@ -54,7 +55,14 @@
     (define/augment (can-interactive-resize? evt) #f)
     
     (define/private (init-graph-elements)
-      
+      (for-each (lambda (i)
+                  (let ([n (first i)]
+                        [label (second i)]
+                        [color (third i)])
+                    (unless (hash-has-key? nodes n)
+                      (hash-set! nodes n (new node% [label label] [color color])))))
+                raw-nodes)
+       
       (for-each
        (lambda (key)
          (let* ([from (car key)]
@@ -82,7 +90,8 @@
    
     (define node%
       (class object%
-        (init-field [label #f])
+        (init-field [label #f]
+                    [color #f])
         (field [x +nan.0]
                [y +nan.0]
                [px +nan.0]
@@ -106,6 +115,7 @@
         
         (define/public (fixed?) fixed)
         (define/public (get-label) label)
+        (define/public (get-color) color)
         (define/public (get-weight) weight)
         (define/public (incr-weight) (set! weight (add1 weight)))))
     
@@ -144,7 +154,8 @@
              [s (new graph-editor-snip% [editor text])]
              [label (send n get-label)]
              [width (get-text-width label)]
-             [image-snip (make-object image-snip% (create-node-bitmap label width))])
+             [color (send n get-color)]
+             [image-snip (make-object image-snip% (create-node-bitmap label color width))])
         (send text begin-edit-sequence)
         (send text insert image-snip)
         (send text end-edit-sequence)
