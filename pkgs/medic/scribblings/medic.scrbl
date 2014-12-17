@@ -244,22 +244,25 @@ circumstances, showing the behavior of data is needed. Consider the following ex
   (+ (sqr x) (sqr y)))
 ]
 
-When we call @racket[(log (f 3 4))], it produces a tracing log ``(@racket[f] 3 4) = 25'', which presents no information
+When we call @racket[(log (f 3 4))], it produces a tracing log ``(@racket[f] 3 4) = 25'', which reveals no information
 about what the @racket[f] function does. To change the behavior of @racket[(log (f 3 4))], we can modify
 the Medic program by adding @racket[(with-behavior f "Calling f: sum of @,x squared and @,y squared is @ret")]. The @"@" notation
-provides a way to obtain the values of arguments of a function as well as the function returning value. For example, the above
+offers a way to obtain the values of arguments of a function as well as the function returning value. For example, the above
 @"@"@racket[,x] gets the value of @racket[x] and @"@"@racket[ret] keeps the returning value of the @racket[f] function call. 
 Then the call of @racket[(log (f 3 4))] generates ``Calling f: sum of 3 squared and 4 squared is 25''. The benefits of 
 allowing @racket[log] to show the behavior of functions are that programmers have control over writing the descriptions
 of functions and changing the description at one place can change all behaviors of related function calls at different
 places.
 
+advantages of layer:
+
+
 @subsection{Tracing Graph}
 A tracing graph presents a new means of tracing, allowing programmers to visually see the @emph{spatial} relationship
 between trace elements. Text-based and linear traces can print out primitive values and preserve the execution order of programs,
 but are limited for values that are reference types or compound data structure, and may exhibit connective relationship. The tracing
 graph eases the burden of programmers visualizing the @emph{spatial} relationship in mind or drawing the graph manually on the paper by
-adding a lot of text-based tracing functions to print out @emph{textual} relationships. To avoid any overlap of graph nodes and
+adding a lot of text-based tracing functions to print out the relationship, which is @emph{textual} and not @emph{visual} enough. To avoid any overlap of graph nodes and
 achieve an aesthetically pleasing visual effect, the tracing graph adopts force-directed algorithms for layout.
 
 Here is one example illustrating the effectiveness of tracing graphs to find a bug in programs that is hard to manifest itself in
@@ -391,7 +394,7 @@ implementation.
 
 We are presented with a trace browser window containing a Log pane:
 @centered{@image{scribblings/log.png}}
-It seems like there is something wrong with the removal operation---the final list should be the sequence 0, 1, 2, 8, 9 
+It seems like the insertion operation with the list behaves correctly, but there is something wrong with the removal operation---the final list should be the sequence 0, 1, 2, 8, 9 
 instead of 0, 1, 2, 4, 5. The tracing logs give us little clue about the cause of the problem, and it requires a 
 substantial amount of time to set a breakpoint to step though the program and examine the @racket[previous] and
 @racket[next] references of each node. But if we modify the Medic program by trying the tracing graph, we can see
@@ -424,16 +427,23 @@ the problem instantly.
               ([i (in-range (sub1 (send dlist get-size)))])
               (define next (get-field next temp))
               ; draw an edge from the current node to its next referencing node with the red arrow color
-              (edge temp next "" (get-field datum temp) (get-field datum next) "Red")
+              (edge temp next "" "Red" (get-field datum temp) (get-field datum next))
               next)
             (for/fold ([temp (get-field next (get-field head dlist))])
               ([i (in-range (sub1 (send dlist get-size)))])
               (define prev (get-field previous temp))
               ; draw an edge from the current node to its previous referencing node with the default gray arrow color
-              (edge temp prev "" (get-field datum temp) (get-field datum prev))
+              (edge temp prev "" #f (get-field datum temp) (get-field datum prev))
               (get-field next temp))]))
 }
-We restart the debugging session and the trace browser is opened where the edges and nodes are visualized in the Graph pane.
+We restart the debugging session and the trace browser is opened where the edges and nodes are visualized in the 
+Graph pane. From the graph, we can visually notice that the doubly linked list is broken: a correct list should
+have the property that every edge between nodes is bi-directed. The previous reference of node 4 is still 
+pointing to the old node 3, which is the fourth node in the list we intend to remove from the list in the first iteration 
+of @racket[(send dlist remove 3)] operation. As a result, we can narrow the problem scope down to incorrect previous 
+reference updating with the @racket[remove] method, leading us to go back to the relevant code in the @racket[remove] 
+implementation and catch the bug of neglecting handling the previous reference of a node which is commented out in the code.
+
 @centered{@image{scribblings/graph.png}}
 @subsection{Aggregate View}
 
@@ -456,11 +466,11 @@ directory, we can start debugging by the following debugging script:
 We can also run debugging scripts in the console window of the DrRacket programming environment. To best locate
 the files, complete paths of programs---depending on the stored location---should be supplied.
 
-@smaller{>} @racket[(require medic/core)]
-
-@smaller{>} @racket[(medic "/home/xiangqi/medic/demos/src-medic.rkt")]
-
-@smaller{>} @racket[(debug "/home/xiangqi/medic/demos/src.rkt")]
+@racketblock[
+console prompt: (require medic/core)
+console prompt: (medic "/home/xiangqi/medic/demos/src-medic.rkt")
+console prompt: (debug "/home/xiangqi/medic/demos/src.rkt")
+]
 
 The following are the demos:
 
