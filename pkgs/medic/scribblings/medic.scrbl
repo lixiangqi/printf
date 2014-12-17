@@ -84,9 +84,9 @@ showing any debugging traces information.
 
 @section[#:style '(toc)]{Using the Medic Debugger}
 Debugging with the Medic debugger consists of three kinds of programs: source programs, Medic programs (by convention
-ending with ``-medic.rkt''), and a 
-debugging script. Medic programs represent debugging instructions about the source programs and a debugging 
-script runs the Medic programs and starts debugging the source programs. After the evaluation of the debugging
+ending with ``-medic.rkt''), and a program-starting
+script. Medic programs represent debugging instructions about the source programs and a program-starting
+script runs the Medic programs and starts debugging the source programs. After the evaluation of the program-starting
 script, a debugging graphical interface is presented, which consists of four panes: a Log pane, Graph pane, 
 Aggregate pane and Timeline pane.
 
@@ -361,4 +361,27 @@ implementation and catch the bug of neglecting handling the previous reference o
 
 @subsection{Timeline View}
 
+The timeline view focuses on showing the panorama of individual trace elements. It allows programmers to overview the pattern of
+changes of values over time at a glance and [add more about the slider]. talk about the overal layout of timeline, x y axis
+
+@itemize[
+  @item{@racket[(timeline v)]
+         
+         If the data types of @racket[v] over time are all @emph{numbers}, a line plot is rendered on the timeline. 
+         For @emph{boolean} values,
+         the timeline is composed of colored square units, red denoting false value and blue denoting true value. For other mixed
+         data types, the literal value is displayed.}
+  @item{@racket[(assert pred)]
+         
+         Asserts @racket[pred] to be true. If it fails, the square unit corresponding to the failed value is highlighted in red. 
+         Other square units remain the default gray background color.
+         }
+  @item{@racket[(same? v)]
+         
+         Traditional debuggers are usually only concerned with primitive data values. If programmers only care about whether 
+         the value of a compound data changes or not,   
+         
+         
+         }
+]
 @include-section["demo.scrbl"]

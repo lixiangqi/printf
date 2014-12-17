@@ -12,8 +12,8 @@
 This section covers several small examples to help learn the Medic language and use the Medic debugging tool. 
 Each example contains a source program and a medic program. Assuming the source program is @tt{src.rkt} that 
 is the entry point of the program and the medic
-program is @tt{src-medic.rkt}, and the source program, medic program and debugging script are stored in the same
-directory, we can start debugging by the following debugging script:
+program is @tt{src-medic.rkt}, and the source program, medic program and program-starting script are stored in the same
+directory, we can start debugging by the following program-starting script:
 @codeblock{
 #lang racket
 (require medic/core)
@@ -21,7 +21,7 @@ directory, we can start debugging by the following debugging script:
 (debug "src.rkt")
 }
 
-We can also run debugging scripts in the console window of the DrRacket programming environment. To best locate
+We can also run program-starting scripts in the console window of the DrRacket programming environment. To best locate
 the files, complete paths of programs---depending on the stored location---should be supplied.
 
 @racketblock[
