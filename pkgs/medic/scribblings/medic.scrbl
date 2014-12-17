@@ -14,149 +14,9 @@ The Medic debugger is a debugging tool that incorporates a metaprogramming langu
 task of debugging and a full featured tracing library to enhances the traditional debugging
 technique of inserting print-like expressions into the source program. 
 @local-table-of-contents[]
-@section{A Metaprogramming Language}
-@defmodulelang[medic]
-The Medic debugger treats the debugging as a metaprogramming activity, where the programmer writes
-a debugging program about the target program to make invisible states of the source program visible.
-The separation of a debugging program from a source program enables reusability and programmability
-of the debugging program as well as the intactness of the source program. The debugging program can 
-serve as a form of documentation, which preserves
-the efforts invested in debugging, and act as something akin to testing suites that run against
-a modified program later on during the process of software development.
 
-Here is the grammar for the Medic metaprogramming language:
+@include-section["language.scrbl"]
 
-@(racketgrammar* 
-  #:literals (layer export import def in with-behavior ref each-function
-              on-entry on-exit at with-start)
-  [top-level-form (layer-form layer-form ...)]        
-  [layer-form (layer layer-id layer-expr ...)
-              (layer layer-id #:enable flag layer-expr ...)]
-  [layer-expr (export id id ...)
-              (import layer-id layer-id ...)
-              debug-expr]
-  [debug-expr (def debug-src-id #:src source-expr source-expr ...)
-              (def debug-id #:debug match-expr match-expr ...)
-              (in #:file module-path match-expr match-expr ...)]
-  [match-expr (with-behavior f template)
-              (ref debug-id)
-              insert-expr 
-              [each-function insert-expr insert-expr ...]
-              [fun-pattern-expr insert-expr insert-expr ...]
-              [(f f ...) insert-expr insert-expr ...]]
-  [insert-expr border-expr
-               at-expr]
-  [border-expr [on-entry source-expr source-expr ...]
-               [on-exit source-expr source-expr ...]]
-  [at-expr [(at location-expr) border-expr border-expr ...]
-              [(at location-expr before-expr) border-expr border-expr ...]
-              [(at location-expr after-expr) border-expr border-expr ...]
-              [(at location-expr before-expr after-expr) border-expr border-expr ...]]
-  [location-expr target-language-expression
-                 at-pattern-expr]
-  [at-pattern-expr (with-start part-of-target-language-expression)]
-  [fun-pattern-expr (with-start part-of-target-language-function-name)]
-  [before-expr [#:before location-expr location-expr ...]]
-  [after-expr [#:after location-expr location-expr ...]]
-  [source-expr (ref debug-src-id)
-               target-language-expression]
-  [flag boolean]
-  [template string]
-  [part-of-target-language-expression string]
-  [part-of-target-language-function-name string]
-  [f variable-not-otherwise-mentioned]
-  [id variable-not-otherwise-mentioned]
-  [layer-id variable-not-otherwise-mentioned]
-  [debug-src-id variable-not-otherwise-mentioned]
-  [debug-id variable-not-otherwise-mentioned])
-
-There are some points about the language worth noting:
-
-@itemize[
-  @item{With the primitive elements of debugging and means of combination and abstraction 
-        in this language, the Medic language provides the programmer with expressive powers over augmenting 
-        the source program with desirable debugging behaviors without changing the source 
-        program.}
-  @item{The @racketvarfont{layer-form} form modularizes debugging code and facilitates organizing debugging traces into
-        different layers.
-        The @racket[#:enable] keyword in @racketvarfont{layer-form} permits enabling and disabling adding
-        the debugging behaviors described within @racketvarfont{layer-form} to the source code, while the debugging definitions
-        within the layer are still available to other layers.  
-        }
-  @item{The forms @tt{(@racket[export] @racketvarfont{id} @racketvarfont{id} ...)} and @tt{(import @racketvarfont{layer-id} @racketvarfont{layer-id} ...)} declare
-        exports and imports of a layer, where the @racketvarfont{id} is the identifier of an internal
-        layer definition and @racketvarfont{layer-id} is some layer identifier.}   
-  @item{The internal layer definitions supports code abstraction and reusability.
-        The identifier @racketvarfont{debug-src-id} in the form @tt{(@racket[def] @racketvarfont{debug-src-id} @racket[#:src] @racketvarfont{source-expr} @racketvarfont{source-expr} ...)} refers
-        to a sequence of source expressions following after the @racket[#:src] keyword, and the
-        expression @tt{(@racket[ref] @racketvarfont{debug-src-id})} returns the corresponding source expressions. In a similar way, the
-        identifier @racketvarfont{debug-id} in the form @tt{(@racket[def] @racketvarfont{debug-id} @racket[#:debug] @racketvarfont{match-expr} @racketvarfont{match-expr} ...)} is bound
-        to a sequence of debugging expressions and the expression @tt{(@racket[ref] @racketvarfont{debug-id})} returns the corresponding
-        debugging expressions.} 
-  @item{In the form @tt{(@racket[in] @racket[#:file] @racketvarfont{module-path match-expr match-expr} ...)}, the specification for @racketvarfont{module-path} 
-        can be three kinds of paths: a relative path, an absolute path, or a library path. For example, the following is
-        acceptable specification for @racketvarfont{module-path}.
-        @racketblock[
-        (code:comment "a relative path")
-        (in #:file "src.rkt" ....)
-        (code:comment "an absolute path")
-        (in #:file (file "/home/xiangqi/test/src.rkt" ....))
-        (code:comment "a library path")
-        (in #:file test/src ....)
-        ]}
-  @item{The form @tt{(@racket[with-behavior] @racketvarfont{f template})} defines the behavior of the @racketvarfont{f} function, which is only useful
-        when it goes with the tracing @racket[log] function. See @secref["log"] for more information about the usage.}
-  @item{The @"@" notation provides a way to distinguish debugging primitives from the primitives in the target language where 
-        programmers can mix them in the target program without ambiguity. Currently there are three kinds of debugging 
-        primitives: @"@"@racket[function-name], @"@"@racket[ret], and @"@"@racket[,par] where @racket[par] represents any parameter of 
-        a function and is matched by the parameter name.
-        
-        The @"@"@racket[function-name] primitive exposes the run-time function scope to programmers, which is only available to 
-        debuggers. For example, the
-        form 
-        
-        [@racket[each-function] [@racket[on-entry] (@racket[log] @racket["function ~a entered"] @"@"@racket[function-name])]]
-        
-        helps programmers keep track of the control flow of the program without manually adding tracing functions in every function that
-        is likely to reach in the run time.
-        
-        The @"@"@racket[ret] and @"@"@racket[,par] primitives can only be used within @racket[template] in @racket[(with-behavior f template)],
-        where @"@"@racket[ret] contains the return value of @racket[f] function call and @"@"@racket[,par] contains the value of the 
-        parameter @racket[par]. For example, one possible usage might be
-        
-        @racket[(with-behavior f "f takes @,x and @,y and returns @ret")].
-       }
-  @item{The core of the language's power to describe how the source program should exhibit the desirable debugging
-        behaviors is captured by @racketvarfont{match-expr}, which involves @emph{where} to pinpoint and @emph{what} to do. 
-        
-        As the Medic language is intended to be @emph{target-language-independent} that works with most popular programming
-        language as much as possible, a minimum set of scope categories is chosen: module scope and function scope. For 
-        example, for the above grammar, the third clause of the @racketvarfont{match-expr} non-terminal is within module scope, 
-        and the following three clauses are within function scope. Function scope can be function name exact matching or 
-        pattern matching. The form @tt{(@racketvarfont{f f} ...)} matches one or more function names enclosed in the parenthesis, and
-        @racketvarfont{fun-patten-expr} matches a pattern of function names starting with some common characters, which are components
-        of the string @racketvarfont{part-of-target-language-function-name} in @tt{(@racket[with-start] @racketvarfont{part-of-target-language-function-name})}.
-        The debugging primitive @racket[each-function] supports referring to every function defined in 
-        the module. 
-        @margin-note{When the target language is Racket, the @racketvarfont{location-expr} anchor expression in the 
-        form @tt{(@racket[at] @racketvarfont{location-expr} ...)} cannot be the internal definition, such as @racket[(define ....)] form inside a 
-        function or @racket[(let ....)] local binding form.}
-        With clear scope declared for debugging, exact location descriptions are supported by @racketvarfont{border-expr} and 
-        @racketvarfont{at-expr}. The goal of @racketvarfont{at-expr} is to facilitate accurately locating the target expression anywhere
-        in the source program. The @racketvarfont{location-expr} expression in the form @tt{(@racket[at] @racketvarfont{location-expr} ...)} can be a 
-        complete expression in the target program or a part of the expression represented by @racketvarfont{at-pattern-expr} when
-        the expression is complicated. To avoid the confusions of multiple matches of @racketvarfont{location-expr} in the target
-        program, specification of @racketvarfont{before-expr} and @racketvarfont{after-expr} can be employed to confine the lexical context 
-        of the target expression @racketvarfont{location-expr}. If @racketvarfont{border-expr} is within @racketvarfont{at-expr}, the debugging code 
-        @tt{@racketvarfont{source-expr source-expr} ...} is inserted before or after the source expression matched by @racketvarfont{at-expr};
-        otherwise, it is inserted at the beginning or the end of a function or module. When there are multiple @racketvarfont{match-expr}s
-        that contains to-be-inserted debugging code @racket[a], @racket[b], and @racket[c] individually and all requires to be added
-        before the same source expression @racket[d], the order of the final modified program will be @racket[c b a d]. On the 
-        contrary, when they are all after the expression @racket[d], the order will be @racket[d a b c].
-        
-        }
-]
- 
 @section{Medic Tracing}
 
 @defmodule[medic/trace]
@@ -164,19 +24,27 @@ There are some points about the language worth noting:
 @defproc*[([(log [datum any/c]) void?]
            [(log [form string?] [v any/c] ...) void?])]{
 Adds a log entry in the Log pane. For the latter @racket[log] form, the log entry is a string @racket[form] with @litchar{~a} replaced
-by the corresponding value among @racket[v]s.The number of @litchar{~a}s in @racket[form] must be
+by the corresponding value among @racket[v]s. The number of @litchar{~a}s in @racket[form] must be
 the same as the number of @racket[v]s.} Examples are as follows:
 @codeblock{
 (log "Hello World")
 (log "function ~a entered" @"@"function-name)
 }
 
-@defproc[(edge [from object?] [to object?] [edge-label any/c ""] [from-label any/c ""] [to-label any/c ""] [color (or/c string? #f) #f])
+@defproc[(node [v object?] [node-label any/c ""] [color (or/c string? #f) #f])
+         void?]{
+Add a node to the Graph pane. The optional arguments @racket[node-label] and @racket[color] specify node
+properties. If @racket[node] is called multiple times for the same @racket[v], only one node corresponding
+to @racket[v] is shown in the Graph pane.
+}
+@defproc[(edge [from object?] [to object?] [edge-label any/c ""] [color (or/c string? #f) #f] [from-label any/c ""] [to-label any/c ""])
          void?]{
 Generates an edge in the Graph pane connecting from @racket[from] to @racket[to].  
 The optional arguments @racket[edge-label], @racket[from-label], @racket[to-label] set the label 
 properties of the edge and two connected nodes. The color of the arrow head of the edge is specified
-by @racket[color]. When @racket[color] is @racket[#f], it uses the default gray color.                                  
+by @racket[color]. When @racket[color] is @racket[#f], it uses the default gray color. When there 
+exists no node associated with @racket[from] or @racket[to], @racket[edge] creates a new node for it
+first and then add an edge. 
 }
 
 @defproc[(aggregate [v any/c] ...) void?]{
@@ -214,7 +82,7 @@ Evaluates the target program indicated by the file path @racket[path] and opens 
 showing any debugging traces information.                                                        
 }
 
-@section{Using the Medic Debugger}
+@section[#:style '(toc)]{Using the Medic Debugger}
 Debugging with the Medic debugger consists of three kinds of programs: source programs, Medic programs (by convention
 ending with ``-medic.rkt''), and a 
 debugging script. Medic programs represent debugging instructions about the source programs and a debugging 
@@ -222,6 +90,7 @@ script runs the Medic programs and starts debugging the source programs. After t
 script, a debugging graphical interface is presented, which consists of four panes: a Log pane, Graph pane, 
 Aggregate pane and Timeline pane.
 
+@local-table-of-contents[]
 @subsection[#:tag "log"]{Tracing Log}
 Like the traditional print-like expressions, the tracing @racket[log] produces a linear and textual debugging information
 to identify problems in program execution. However, @racket[log] is more advanced than the traditional print-like expression in 
@@ -492,227 +361,4 @@ implementation and catch the bug of neglecting handling the previous reference o
 
 @subsection{Timeline View}
 
-@section[#:style '(toc)]{Medic by Example}
-
-This section covers several small examples to help learn the Medic language and use the Medic debugging tool. 
-Each example contains a source program and a medic program. Assuming the source program is @tt{src.rkt} that 
-is the entry point of the program and the medic
-program is @tt{src-medic.rkt}, and the source program, medic program and debugging script are stored in the same
-directory, we can start debugging by the following debugging script:
-@codeblock{
-#lang racket
-(require medic/core)
-(medic "src-medic.rkt")
-(debug "src.rkt")
-}
-
-We can also run debugging scripts in the console window of the DrRacket programming environment. To best locate
-the files, complete paths of programs---depending on the stored location---should be supplied.
-
-@racketblock[
-console prompt: (require medic/core)
-console prompt: (medic "/home/xiangqi/medic/demos/src-medic.rkt")
-console prompt: (debug "/home/xiangqi/medic/demos/src.rkt")
-]
-
-The following are the demos:
-
-@local-table-of-contents[]
-
-@subsection{Demo 1: @tt{border-expr} and @tt{at-expr}}
-Basic module-level and function-level insertion of some debugging code.
-
-@bold{@tt{src1.rkt:}}
-@codeblock{
-#lang racket
-(define z 2)
-(define n 9)
-
-(define (f x)
-  (define z 5)
-  (define n 4)
-  (if (zero? x)
-      1
-      (* x (sub1 x))))
-
-(f 3)
-}
-
-@bold{@tt{src1-medic.rkt:}}
-@codeblock{
-#lang medic
-(layer layer1 
-       (in #:file "src1.rkt"
-           ; module-level border-expr
-           [on-entry (define x 1)
-                     (define y 2)]
-           [on-exit 
-            (log "module exit:")
-            (log y)]
-           ; module-level at-expr
-           [(at (define n 9)) [on-exit (log "module at:")
-                                       (log n)]]
-           ; function-level at-expr and border-expr
-           [(fact) 
-            [(at (with-start "(* x (sub1")) [on-entry (log "else branch:") (log n)]]
-            [on-entry (define y 30)
-                      (log "function entry:")
-                      (log x)
-                      (log y)]
-            [on-exit (log "function exit:")
-                     (log n)]])) 
-}
-@subsection{Demo 2: @tt{at-expr}}
-The @racket[at-expr] pattern matching with @racket[before-expr] and @racket[after-expr] specification.
-
-@bold{@tt{src2.rkt:}}
-@codeblock{
-#lang racket
-
-(define x 10)
-
-(define counter 0)
-
-(define (inc-counter) (set! counter (add1 counter)))
-
-(define (inc x) 
-  (inc-counter)
-  (+ x 1))
-
-(define (g)
-  (define x (inc 4))
-  (inc-counter)
-  (+ x 1))
-
-(g) 
-}
-@bold{@tt{src2-medic.rkt:}}
-@codeblock{
-#lang medic
-
-(layer layer1 
-       (in #:file "src.rkt"
-           ; match two instances of (inc-counter)
-           [(at (inc-counter)) [on-entry (log "[1]calling inc-counter")]]
-           
-           ; match two instances of (+ x 1)
-           [(at (+ x 1) [#:before (inc-counter)]) [on-entry (log "[2]calling (+ x 1)")]]
-           
-           ; only match (+ x 1) in g function
-           [(at (+ x 1) [#:before (define x (inc 4))
-                                  (inc-counter)])
-            [on-entry (log "[3]calling (+ x 1) in g")]]
-           [(g) [(at (+ x 1)) [on-entry (log "[4]match (+ x 1) in g")]]]
-           
-           ; only match (inc-counter) in function g
-           [(at (inc-counter) [#:before (define x (inc 4))] [#:after (+ x 1)])
-            (on-entry (log "[5]calling (inc-counter) in g"))]
-           [(at (inc-counter) [#:before (with-start "(define x (inc")] [#:after (+ x 1)])
-            (on-entry (log "[6]use with-start matching (inc-counter) in g"))]))
-}
-@subsection{Demo 3: multiple functions scope}
-Multiple functions involved in the debugging activity.
-
-@bold{@tt{src3.rkt:}}
-@codeblock{
-#lang racket
-
-(define counter 0)
-
-(define (inc-counter) (set! counter (add1 counter)))
-
-(define (inc x) 
-  (inc-counter)
-  (+ x 1))
-
-(define (g x)
-  (inc x))
-
-(g 4)
-}
-
-@bold{@tt{src3-medic.rkt:}}
-@codeblock{
-#lang medic
-
-(layer layer1 
-       (in #:file "src3.rkt"
-           ; scope of multiple functions 
-           [(g inc) [on-entry (log "function ~a: x = ~a" @"@"function-name x)]]
-           ; fun-pattern-expr
-           [(with-start "inc") [on-entry (log "function ~a with starting inc function name" @"@"function-name)]]
-           ; each-function primitive
-           [each-function [on-entry (log "function ~a entered" @"@"function-name)]]))
-}
-
-@subsection{Demo 4: @tt{with-behavior}}
-
-@bold{@tt{src4.rkt:}}
-@codeblock{
-#lang racket
-
-(define (f x y)
-  (+ (sqr x) (sqr y)))
-}
-@bold{@tt{src4-medic.rkt:}}
-@codeblock{
-#lang medic
-
-(layer layer1 
-       (in #:file "src4.rkt"
-           (with-behavior f "Calling f: sum of @"@",x squared and @"@",y squared is @"@"ret")
-           [on-exit (log (f 3 4))
-                    (log (f 4 5))]))
-}
-
-@subsection{Demo 5: @tt{def}, @tt{import} and @tt{export}}
-@bold{@tt{f.rkt:}}
-@codeblock{
-#lang racket
-
-(provide f)
-
-(define (f x y)
-  (+ (sqr x) (sqr y)))
-}
-@bold{@tt{src5.rkt:}}
-@codeblock{
-#lang racket
-
-(require "f.rkt")
-
-(define t 5)
-
-(define (g x)
-  (* x (f x t)))
-
-(g 3)
-}
-@bold{@tt{src5-medic.rkt:}}
-@codeblock{
-#lang medic
-
-(layer layer1
-       (export log-function-entry)
-       ; debug-src-id definition
-       (def init-defs #:src (define id-count 0)
-                            (define (inc-id-count) (set! id-count (add1 id-count))))
-       (def inc-id-count #:src (inc-id-count))
-       (def display-count #:src (log id-count))
-       ; debug-id definition
-       (def log-function-entry 
-         #:debug 
-         [each-function [on-entry (log "function ~a entered" @"@"function-name)]])
-       (in #:file "src.rkt"
-           [on-entry (ref init-defs)]
-           [(at (with-start "(define")) [on-entry (ref inc-id-count)]]
-           (ref log-function-entry)
-           [on-exit (ref display-count)]))
-
-(layer layer2
-       (import layer1)
-       (in #:file "f.rkt"
-           (ref log-function-entry))
-       (in #:file "src.rkt"
-           [on-exit (log t)]))
-}
+@include-section["demo.scrbl"]
