@@ -77,9 +77,12 @@ There are some points about the language worth noting:
         in this language, the Medic language provides the programmer with expressive powers over augmenting 
         the source program with desirable debugging behaviors without changing the source 
         program.}
-  @item{The @racket[#:enable] keyword in @racketvarfont{layer-form} permits enabling and disabling adding
+  @item{The @racketvarfont{layer-form} form modularizes debugging code and facilitates organizing debugging traces into
+        different layers.
+        The @racket[#:enable] keyword in @racketvarfont{layer-form} permits enabling and disabling adding
         the debugging behaviors described within @racketvarfont{layer-form} to the source code, while the debugging definitions
-        within the layer are still available to other layers.}
+        within the layer are still available to other layers.  
+        }
   @item{The forms @tt{(@racket[export] @racketvarfont{id} @racketvarfont{id} ...)} and @tt{(import @racketvarfont{layer-id} @racketvarfont{layer-id} ...)} declare
         exports and imports of a layer, where the @racketvarfont{id} is the identifier of an internal
         layer definition and @racketvarfont{layer-id} is some layer identifier.}   
@@ -226,6 +229,7 @@ two ways:
 @itemize[
   @item{Show the context.}
   @item{Show the behavior.}
+  @item{Show the layer of interest.}
   ]
 The content of the log entry produced by @racket[(log datum)] varies with the datum type. If there is any context information
 about the datum that is available to the debugger such as the name of @racket[datum], it is displayed along with the value 
@@ -254,9 +258,48 @@ allowing @racket[log] to show the behavior of functions are that programmers hav
 of functions and changing the description at one place can change all behaviors of related function calls at different
 places.
 
-advantages of layer:
+It always happens that the traces become harder to understand with the increase of size, necessitating programmers only
+seeing parts of traces of interest. The @emph{layer Viewer} feature of @racket[log] offers a way to focus on relevant traces while
+preserving the execution order of traces. 
 
+The following source program traverses a tree to find the path to a desirable node. 
+@codeblock{
+#lang racket
 
+(define (find-path t name)
+  (cond
+    [(string? t) (if (equal? t name) '() #f)]
+    [else
+     (let ([left-p (find-path (cadr t) name)])
+       (if left-p 
+           (cons (car t) left-p)
+           (let ([right-p (find-path (caddr t) name)])
+             (if right-p 
+                 (cons (car t) right-p)
+                 #f))))]))
+
+(find-path '("a" ("b" "1" "2") ("c" "3" "4")) "3")
+}
+Suppose we want to insert some @racket[log] expressions to see how the tree is traversed.
+@codeblock{
+#lang medic
+
+(layer left-path
+       (in #:file "src.rkt"
+           [(at (with-start "(if left-p")) [on-entry (log "left branch: ~a, ~a" (cadr t) left-p)]]))
+
+(layer right-path
+       (in #:file "src.rkt"
+           [(at (with-start "(if right-p")) [on-entry (log "right branch: ~a, ~a" (caddr t) right-p)]]))
+}
+We start a debugging session and a trace browser is opened after the evaluation of Medic programs and augmented source programs.
+@centered{@image{scribblings/layer1.png}}
+What if we just want to see the path of left branches? By clicking on the ``Log Viewer'' button, a Layer Viewer window pops up, 
+displaying check boxes of existing layer names. 
+@centered{@image{scribblings/layer2.png}}
+Select the @racket[left-path] check box, the Log Viewer is updated immediately, highlighting the traces which belong to the 
+layer @racket[left-path].
+@centered{@image{scribblings/layer3.png}}
 @subsection{Tracing Graph}
 A tracing graph presents a new means of tracing, allowing programmers to visually see the @emph{spatial} relationship
 between trace elements. Text-based and linear traces can print out primitive values and preserve the execution order of programs,
