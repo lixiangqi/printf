@@ -19,7 +19,6 @@
        (cons #'var (arglist-bindings #'others))]))
   
   (define (annotate-stx stx template)
-    (printf "template=~v\n" template)
     (define top-level-ids '())
     (define args-table (make-hash))
     

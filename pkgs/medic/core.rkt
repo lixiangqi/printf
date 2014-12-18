@@ -2,7 +2,7 @@
 
 (require "load-annotator.rkt"
          "medic-annotator.rkt"
-         "browser.rkt")
+         "trace-browser/browser.rkt")
 
 (provide medic
          debug)
@@ -20,7 +20,7 @@
             (hash-set! init fn-key val))))))
 
 ; fn can be relative-path or complete path
-; e.g. (medic "/home/xiangqi/printf/racket/pkgs/drracket-pkgs/drracket/gui-debugger/printf/test/debug1.rkt"
+; e.g. (medic "/home/xiangqi/test/debug1.rkt"
 ;             "debug2.rkt")
 (define (medic fn . fns)
   (let* ([files (map (lambda (f) (if (complete-path? f) `(file ,f) f)) (append (list fn) fns))]
