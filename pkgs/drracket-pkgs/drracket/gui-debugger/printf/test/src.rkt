@@ -1,10 +1,15 @@
 #lang racket
 
-(require "f.rkt")
+(define (find-path t name)
+  (cond
+    [(string? t) (if (equal? t name) '() #f)]
+    [else
+     (let ([left-p (find-path (cadr t) name)])
+       (if left-p 
+           (cons (car t) left-p)
+           (let ([right-p (find-path (caddr t) name)])
+             (if right-p 
+                 (cons (car t) right-p)
+                 #f))))]))
 
-(define t 5)
-
-(define (g x)
-  (* x (f x t)))
-
-(g 3)
+(find-path '("a" ("b" "1" "2") ("c" "3" "4")) "3")

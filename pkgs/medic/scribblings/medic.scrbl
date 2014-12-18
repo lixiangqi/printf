@@ -364,6 +364,9 @@ implementation and catch the bug of neglecting handling the previous reference o
 The timeline view focuses on showing the panorama of individual trace elements. It allows programmers to overview the pattern of
 changes of values over time at a glance and [add more about the slider]. talk about the overal layout of timeline, x y axis
 
+slider step through the steps, see multiple values at one time
+click on each unit, get the value, 
+
 @itemize[
   @item{@racket[(timeline v)]
          
@@ -378,10 +381,17 @@ changes of values over time at a glance and [add more about the slider]. talk ab
          }
   @item{@racket[(same? v)]
          
-         Traditional debuggers are usually only concerned with primitive data values. If programmers only care about whether 
-         the value of a compound data changes or not,   
+         Traditional debuggers are usually only concerned with primitive data values. We define the 
+         state of a compund data is a permutation of possible states of the primitive data members. If programmers want to 
+         know whether the state of a compound data changes or not, they need to memorize the previous histories of primitive 
+         data members, examine all the current primitive data members at a micro level and make comparisons, which requires 
+         a significant amount of debugging efforts. The Medic debugger saves the debugging work that programmers have to do 
+         mentally and manually by treating the compound data of interest as a @emph{unit}, the same as the 
+         primitive data in the source program, and monitoring value changes at a macro level.          
          
-         
+         When @racket[(same? v)] is called for the first time, it always returns true. Aside from the first call, if the 
+         current state of @racket[v] is different from the previous state, the call returns false; otherwise, the value 
+         is true. [check if all unit will be colored]
          }
 ]
 @include-section["demo.scrbl"]

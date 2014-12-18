@@ -1,5 +1,9 @@
 #lang medic
 
-(layer layer1
+(layer left-path
        (in #:file "src.rkt"
-           [on-exit (log 'aha)]))
+           [(at (with-start "(if left-p")) [on-entry (log "left branch: ~a, ~a" (cadr t) left-p)]]))
+
+(layer right-path
+       (in #:file "src.rkt"
+           [(at (with-start "(if right-p")) [on-entry (log "right branch: ~a, ~a" (caddr t) right-p)]]))
