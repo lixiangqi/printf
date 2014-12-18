@@ -1,5 +1,5 @@
 #lang medic
 
 (layer layer1
-       (in #:file "src.rkt"
+       (in #:file "fact-iter.rkt"
            [(fact) [on-entry (aggregate x a)]]))

@@ -154,11 +154,11 @@ Suppose we want to insert some @racket[log] expressions to see how the tree is t
 #lang medic
 
 (layer left-path
-       (in #:file "src.rkt"
+       (in #:file "find-path.rkt"
            [(at (with-start "(if left-p")) [on-entry (log "left branch: ~a, ~a" (cadr t) left-p)]]))
 
 (layer right-path
-       (in #:file "src.rkt"
+       (in #:file "find-path.rkt"
            [(at (with-start "(if right-p")) [on-entry (log "right branch: ~a, ~a" (caddr t) right-p)]]))
 }
 We start a debugging session and a trace browser is opened after the evaluation of Medic programs and augmented source programs.
@@ -358,14 +358,50 @@ implementation and catch the bug of neglecting handling the previous reference o
 
 @centered{@image{scribblings/graph.png}}
 @subsection{Aggregate View}
+The aggregate view tackles the problem of grouping multiple trace elements that may spatially separated in the source
+program, or are relevant to each other such as in the same control flow of program or belonging to the same category of
+features. Also it supports @emph{scrubbing} and data comparisons @emph{diff}.
 
+To illustrate, the source program and Medic program are as follows.
+@codeblock{
+#lang racket
+
+(define (fact x a)
+  (if (zero? x)
+      a
+      (fact (sub1 x) (* x a))))
+
+(fact 3 1)
+}
+@codeblock{
+#lang medic
+
+(layer layer1
+       (in #:file "fact-iter.rkt"
+           [(fact) [on-entry (aggregate x a)]]))
+}
+
+The Aggregate pane of the trace browser displays the following aggregate view of data, where the values of @racket[x]
+and @racket[a] are grouped together in each column. 
+@centered{@image{scribblings/aggre.png}}
+
+If traces grow overwhelming, we can click on the circle button left to the entries, opening a scrub view window. The 
+scrub view allows us to focus on values at one step by scrubbing through the traces recorded in the temporal dimension.
+
+@centered{@image{scribblings/scrub1.png}}
+
+For data comparisons, we can right-click on either of the two slider handles---turning red when right-clicked---to mark the step of data that we want the
+current values to compare to. Differences between two steps of data are highlighted in pink.
+
+@centered{@image{scribblings/scrub2.png}}
 @subsection{Timeline View}
 
 The timeline view focuses on showing the panorama of individual trace elements. It allows programmers to overview the pattern of
-changes of values over time at a glance and [add more about the slider]. talk about the overal layout of timeline, x y axis
-
-slider step through the steps, see multiple values at one time
-click on each unit, get the value, 
+changes of values over time at a glance and examine values of interest. The vertical axis of the Timeline pane records
+each trace element and the horizontal axis represents values of each trace element over time. There is a timeline slider on 
+the top of the Timeline pane. The timeline slider can step through the timeline, showing multiple values which have the same
+horizontal coordinates at the same time. Clicking on any timeline square unit pops up a tooltip window, showing current
+individual value. 
 
 @itemize[
   @item{@racket[(timeline v)]
@@ -373,11 +409,58 @@ click on each unit, get the value,
          If the data types of @racket[v] over time are all @emph{numbers}, a line plot is rendered on the timeline. 
          For @emph{boolean} values,
          the timeline is composed of colored square units, red denoting false value and blue denoting true value. For other mixed
-         data types, the literal value is displayed.}
+         data types, the literal value is displayed.
+         
+         One example:
+@codeblock{
+#lang racket
+
+(define (count-length v count)
+  (if (null? v)
+      count
+      (count-length (cdr v) (+ count 1))))
+
+(count-length (cons 8 (cons 9 '())) 0)
+} 
+@codeblock{
+#lang medic
+
+(layer layer1
+       (in #:file "count.rkt"
+           [(count-length) [on-entry (timeline count)
+                                     (timeline v)
+                                     (timeline (null? v))]]))
+} 
+ The timeline:
+@centered{@image{scribblings/timeline.png}}
+ The timeline slider:
+@centered{@image{scribblings/slider.png}} 
+         }
   @item{@racket[(assert pred)]
          
          Asserts @racket[pred] to be true. If it fails, the square unit corresponding to the failed value is highlighted in red. 
          Other square units remain the default gray background color.
+         
+         One example:
+@codeblock{
+#lang racket
+
+(define (fact x)
+  (if (zero? x)
+      1
+      (* x (fact (- x 1)))))
+
+(fact 3)
+}
+@codeblock{
+#lang medic
+
+(layer layer1
+       (in #:file "fact.rkt"
+           [(fact) [on-entry (assert (> x 0))]]))
+}
+The timeline:
+@centered{@image{scribblings/assert.png}} 
          }
   @item{@racket[(same? v)]
          
@@ -391,7 +474,43 @@ click on each unit, get the value,
          
          When @racket[(same? v)] is called for the first time, it always returns true. Aside from the first call, if the 
          current state of @racket[v] is different from the previous state, the call returns false; otherwise, the value 
-         is true. [check if all unit will be colored]
+         is true. Like @racket[(assert pred)], only false values are highlighted in red in the timeline.
+         
+         Here is one debugging example.
+         
+@codeblock{
+#lang racket
+
+(define x (vector 1 2 3 4 5))
+(define y (list 1 -2 3 4 -5))
+
+(define (convert-to-vector v)
+  (cond
+    [(vector? v) v]
+    [(list? v) (apply vector v)]))
+
+(define (make-new-vector v)
+  (vector-set! (convert-to-vector v) 0 #f))
+
+(make-new-vector x)
+(make-new-vector y)        
+}  
+         The source program intends to create a new vector based on the original array structures without
+         modifying them. In order to verify that the old array structures remain unchanged, a Medic program
+         with @racket[same?] is added. 
+@codeblock{
+#lang medic
+
+(layer layer1
+       (def check-changed #:src (same? x)
+                                (same? y))
+       (in #:file "same.rkt"
+           [(at (define y (list 1 -2 3 4 -5))) [on-exit (ref check-changed)]]
+           [on-exit (ref check-changed)]))       
+}
+In the Timeline pane, we can clearly see that the source program is erroneous, because the value of @racket[x] is changed. 
+
+@centered{@image{scribblings/same.png}}
          }
 ]
 @include-section["demo.scrbl"]
