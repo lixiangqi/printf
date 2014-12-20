@@ -11,7 +11,7 @@
 @author["Xiangqi Li"]
 
 The Medic debugger is a debugging tool that incorporates a metaprogramming language to describe the
-task of debugging and a full featured tracing library to enhances the traditional debugging
+task of debugging and a full featured tracing library to enhance the traditional debugging
 technique of inserting print-like expressions into the source program. 
 @local-table-of-contents[]
 
@@ -40,15 +40,15 @@ to @racket[v] is shown in the Graph pane.
 @defproc[(edge [from object?] [to object?] [edge-label any/c ""] [color (or/c string? #f) #f] [from-label any/c ""] [to-label any/c ""])
          void?]{
 Generates an edge in the Graph pane connecting from @racket[from] to @racket[to].  
-The optional arguments @racket[edge-label], @racket[from-label], @racket[to-label] set the label 
+The optional arguments @racket[edge-label], @racket[from-label], and @racket[to-label] set the label 
 properties of the edge and two connected nodes. The color of the arrow head of the edge is specified
 by @racket[color]. When @racket[color] is @racket[#f], it uses the default gray color. When there 
 exists no node associated with @racket[from] or @racket[to], @racket[edge] creates a new node for it
-first and then add an edge. 
+first and then adds an edge. 
 }
 
 @defproc[(aggregate [v any/c] ...) void?]{
-Adds an aggregate entry in the Aggregate pane, which groups a sequence of @racket[v] together.
+Adds an aggregate entry in the Aggregate pane, which groups a sequence of @racket[v]s together.
 }
 
 @defproc[(timeline [v any/c]) void?]{
@@ -61,8 +61,8 @@ highlighted in red color.
 }
 
 @defproc[(same? [v any/c]) void?]{
-Adds a timeline entry in the Timeline pane. It checks whether the value of @racket[v] changes over time,
-where @racket[v] can be a primitive data type such as a number, string, or symbol or a compound data 
+Adds a timeline entry in the Timeline pane. It checks whether the value of @racket[v] changes over 
+time where @racket[v] can be a primitive data type such as a number, string, or symbol or a compound data 
 type including a pair, vector, hash table, structure, and class. For a compound data type, a change to 
 an instance of the data type is defined as a change to any part of an instance of the data type. A change 
 to an object of a class is defined to be a change to any of the object's inherited, private, or public member
@@ -74,16 +74,17 @@ fields.
 @defmodule[medic/core]
 
 @defproc[(medic [path (or/c relative-path? complete-path?)] ...) void?]{
-Evaluates the Medic programs and installs the debugging instructions into the target programs at compile time.
+Evaluates the Medic programs and records debugging information. 
 }
 
 @defproc[(debug [path (or/c relative-path? complete-path?)]) void?]{
-Evaluates the target program indicated by the file path @racket[path] and opens the Medic graphical interface
-showing any debugging traces information.                                                        
+Transforms the source program located in the file path @racket[path] by installing debugging instructions
+and evaluates the transformed source program. If there is any debugging traces produced by the Medic tracing
+library, a graphical trace browser is opened.                                               
 }
 
 @section[#:style '(toc)]{Using the Medic Debugger}
-Debugging with the Medic debugger consists of three kinds of programs: source programs, Medic programs (by convention
+Debugging with the Medic debugger involves three kinds of programs: source programs, Medic programs (by convention
 ending with ``-medic.rkt''), and a program-starting
 script. Medic programs represent debugging instructions about the source programs and a program-starting
 script runs the Medic programs and starts debugging the source programs. After the evaluation of the program-starting
@@ -92,17 +93,17 @@ Aggregate pane and Timeline pane.
 
 @local-table-of-contents[]
 @subsection[#:tag "log"]{Tracing Log}
-Like the traditional print-like expressions, the tracing @racket[log] produces a linear and textual debugging information
+Like the traditional print-like expressions, the tracing @racket[log] produces linear and textual debugging information
 to identify problems in program execution. However, @racket[log] is more advanced than the traditional print-like expression in 
-two ways:
+three ways:
 @itemize[
-  @item{Show the context.}
-  @item{Show the behavior.}
-  @item{Show the layer of interest.}
+  @item{Showing the context,}
+  @item{Showing the behavior,}
+  @item{Showing the layer of interest.}
   ]
 The content of the log entry produced by @racket[(log datum)] varies with the datum type. If there is any context information
 about the datum that is available to the debugger such as the name of @racket[datum], it is displayed along with the value 
-of @racket[datum]. However, with @racket[(with-behavior f template)] definition in the Medic program, the logging behavior
+of @racket[datum]. However, with the @racket[(with-behavior f template)] definition in the Medic program, the logging behavior
 of @racket[f] function calls is switched to displaying the behavior of the function @racket[f].
 
 Suppose the value of @racket[x] is 3 and we call @racket[(log x)]. Instead of merely printing out the value of @racket[x],
@@ -122,16 +123,16 @@ about what the @racket[f] function does. To change the behavior of @racket[(log 
 the Medic program by adding @racket[(with-behavior f "Calling f: sum of @,x squared and @,y squared is @ret")]. The @"@" notation
 offers a way to obtain the values of arguments of a function as well as the function returning value. For example, the above
 @"@"@racket[,x] gets the value of @racket[x] and @"@"@racket[ret] keeps the returning value of the @racket[f] function call. 
-Then the call of @racket[(log (f 3 4))] generates ``Calling f: sum of 3 squared and 4 squared is 25''. The benefits of 
-allowing @racket[log] to show the behavior of functions are that programmers have control over writing the descriptions
-of functions and changing the description at one place can change all behaviors of related function calls at different
-places.
+Then the call of @racket[(log (f 3 4))] generates ``Calling f: sum of 3 squared and 4 squared is 25''. Programmers have control
+over writing functions descriptions to obtain desired logging behaviors of function calls. The @racket[with-behavior] forms allows
+programmers to change all logging behaviors of the same function call at different places just by changing the description at
+one place.
 
-It always happens that the traces become harder to understand with the increase of size, necessitating programmers only
-seeing parts of traces of interest. The @emph{layer Viewer} feature of @racket[log] offers a way to focus on relevant traces while
+In general, traces become harder to understand with an increase of size and create a need for programmers to be able to focus on
+only the interesting parts of the trace. The @emph{layer Viewer} feature of @racket[log] offers a way to focus on relevant traces while
 preserving the execution order of traces. 
 
-The following source program traverses a tree to find the path to a desirable node. 
+The following source program traverses a tree to find the path to a desired node. 
 @codeblock{
 #lang racket
 
@@ -161,7 +162,7 @@ Suppose we want to insert some @racket[log] expressions to see how the tree is t
        (in #:file "find-path.rkt"
            [(at (with-start "(if right-p")) [on-entry (log "right branch: ~a, ~a" (caddr t) right-p)]]))
 }
-We start a debugging session and a trace browser is opened after the evaluation of Medic programs and augmented source programs.
+We start a debugging session, and a trace browser is opened after the evaluation of Medic programs and augmented source programs.
 @centered{@image{scribblings/layer1.png}}
 What if we just want to see the path of left branches? By clicking on the ``Log Viewer'' button, a Layer Viewer window pops up, 
 displaying check boxes of existing layer names. 
@@ -171,17 +172,17 @@ layer @racket[left-path].
 @centered{@image{scribblings/layer3.png}}
 @subsection{Tracing Graph}
 A tracing graph presents a new means of tracing, allowing programmers to visually see the @emph{spatial} relationship
-between trace elements. Text-based and linear traces can print out primitive values and preserve the execution order of programs,
-but are limited for values that are reference types or compound data structure, and may exhibit connective relationship. The tracing
-graph eases the burden of programmers visualizing the @emph{spatial} relationship in mind or drawing the graph manually on the paper by
-adding a lot of text-based tracing functions to print out the relationship, which is @emph{textual} and not @emph{visual} enough. To avoid any overlap of graph nodes and
-achieve an aesthetically pleasing visual effect, the tracing graph adopts force-directed algorithms for layout.
+between trace elements. Text-based and linear traces can print out primitive values and preserve the execution order of 
+programs but are limited for values that are reference types or compound data structures, and may exhibit connective relationship. The tracing
+graph eases the burden of programmers visualizing the @emph{spatial} relationship mentally or drawing the graph manually on the paper by
+adding a lot of text-based tracing functions to print out the relationship, which is fundamentally @emph{textual} and not @emph{visual}. To avoid any overlap of graph nodes and
+achieve an aesthetically pleasing visual effect, the tracing graph uses force-directed algorithms for layout.
 
-Here is one example illustrating the effectiveness of tracing graphs to find a bug in programs that is hard to manifest itself in
+Here is one example illustrating the effectiveness of tracing graphs to find a bug in programs that is hard to uncover in
 text-based traces.
 
-Suppose we have an implementation of the doubly linked list with support for common accessing, inserting, and removing elements
-operations. We comment out the line at line number 96 to create a bug. 
+Suppose we have a correct implementation of a doubly linked list with support for common accessing, inserting, and 
+removing operations. We comment out line 96 to create a bug. 
 
 @codeblock[#:line-numbers 1]{
 #lang racket
@@ -307,9 +308,9 @@ implementation.
 We are presented with a trace browser window containing a Log pane:
 @centered{@image{scribblings/log.png}}
 It seems like the insertion operation with the list behaves correctly, but there is something wrong with the removal operation---the final list should be the sequence 0, 1, 2, 8, 9 
-instead of 0, 1, 2, 4, 5. The tracing logs give us little clue about the cause of the problem, and it requires a 
-substantial amount of time to set a breakpoint to step though the program and examine the @racket[previous] and
-@racket[next] references of each node. But if we modify the Medic program by trying the tracing graph, we can see
+instead of 0, 1, 2, 4, 5. The tracing logs give us little insight into the cause of the problem, and setting a breakpoint
+to step though the program and examine the @racket[previous] and @racket[next] references of each node 
+requires a substantial amount of time. If we modify the Medic program by trying the tracing graph, we can see
 the problem instantly.
 @codeblock{
 #lang medic
@@ -350,16 +351,15 @@ the problem instantly.
 }
 We restart the debugging session and the trace browser is opened where the edges and nodes are visualized in the 
 Graph pane. From the graph, we can visually notice that the doubly linked list is broken: a correct list should
-have the property that every edge between nodes is bi-directed. The previous reference of node 4 is still 
-pointing to the old node 3, which is the fourth node in the list we intend to remove from the list in the first iteration 
-of @racket[(send dlist remove 3)] operation. As a result, we can narrow the problem scope down to incorrect previous 
-reference updating with the @racket[remove] method, leading us to go back to the relevant code in the @racket[remove] 
-implementation and catch the bug of neglecting handling the previous reference of a node which is commented out in the code.
+have the property that every edge between nodes is bi-directed. After the first @racket[remove] operation, the previous
+reference of node 4 is still pointing to the old node 3. Through the graph visualization, we can narrow the problem 
+to an incorrect reference update using the @racket[remove] method, and the information leads us to go back to the relevant
+code in the @racket[remove] implementation and find the bug. 
 
 @centered{@image{scribblings/graph.png}}
 @subsection{Aggregate View}
-The aggregate view tackles the problem of grouping multiple trace elements that may spatially separated in the source
-program, or are relevant to each other such as in the same control flow of program or belonging to the same category of
+The aggregate view tackles the problem of grouping multiple trace elements that may be spatially separated in the source
+program or are relevant to each other, for example in the same control flow of the program or belonging to the same category of
 features. Also it supports @emph{scrubbing} and data comparisons @emph{diff}.
 
 To illustrate, the source program and Medic program are as follows.
@@ -385,22 +385,22 @@ The Aggregate pane of the trace browser displays the following aggregate view of
 and @racket[a] are grouped together in each column. 
 @centered{@image{scribblings/aggre.png}}
 
-If traces grow overwhelming, we can click on the circle button left to the entries, opening a scrub view window. The 
+If traces grow overwhelming, we can click on the light-red circle button to the left of the entries and open a scrub view window. The 
 scrub view allows us to focus on values at one step by scrubbing through the traces recorded in the temporal dimension.
 
 @centered{@image{scribblings/scrub1.png}}
 
-For data comparisons, we can right-click on either of the two slider handles---turning red when right-clicked---to mark the step of data that we want the
-current values to compare to. Differences between two steps of data are highlighted in pink.
+For data comparisons, we can right-click on either of the two slider handles---turning red when right-clicked---to mark the step 
+of data to which we want to compare the current values. Differences between two steps of data are highlighted in pink.
 
 @centered{@image{scribblings/scrub2.png}}
 @subsection{Timeline View}
 
-The timeline view focuses on showing the panorama of individual trace elements. It allows programmers to overview the pattern of
+The timeline view focuses on showing the panorama of individual trace elements. It allows programmers to get an overview of the pattern of
 changes of values over time at a glance and examine values of interest. The vertical axis of the Timeline pane records
 each trace element and the horizontal axis represents values of each trace element over time. There is a timeline slider on 
-the top of the Timeline pane. The timeline slider can step through the timeline, showing multiple values which have the same
-horizontal coordinates at the same time. Clicking on any timeline square unit pops up a tooltip window, showing current
+the top of the Timeline pane. The timeline slider can step through the timeline showing multiple values at the same
+horizontal coordinates at the same time. Clicking on any timeline square unit pops up a tooltip window showing current
 individual value. 
 
 @itemize[
@@ -408,7 +408,7 @@ individual value.
          
          If the data types of @racket[v] over time are all @emph{numbers}, a line plot is rendered on the timeline. 
          For @emph{boolean} values,
-         the timeline is composed of colored square units, red denoting false value and blue denoting true value. For other mixed
+         the timeline is composed of colored square units, red denoting false values and blue denoting true values. For other mixed
          data types, the literal value is displayed.
          
          One example:
@@ -465,10 +465,10 @@ The timeline:
   @item{@racket[(same? v)]
          
          Traditional debuggers are usually only concerned with primitive data values. We define the 
-         state of a compund data is a permutation of possible states of the primitive data members. If programmers want to 
+         state of a compund data element as a permutation of possible states of the primitive data members. If programmers want to 
          know whether the state of a compound data changes or not, they need to memorize the previous histories of primitive 
          data members, examine all the current primitive data members at a micro level and make comparisons, which requires 
-         a significant amount of debugging efforts. The Medic debugger saves the debugging work that programmers have to do 
+         a significant amount of debugging effort. The Medic debugger saves the debugging work that programmers have to do 
          mentally and manually by treating the compound data of interest as a @emph{unit}, the same as the 
          primitive data in the source program, and monitoring value changes at a macro level.          
          
