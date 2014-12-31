@@ -103,7 +103,7 @@
                       (cond
                         [(or (not local?) (equal? (length scope) 1))
                          (if (equal? (length at-posns) 1)
-                             (set! to-remove-entries (append to-remove-entries (list entry)))
+                             (set! to-remove-entries (cons entry to-remove-entries))
                              (set-finer-at-insert-posns! entry (remove pos at-posns)))]
                         [(and local? (not (equal? (length scope) 1)))
                          (set-finer-at-insert-posns! entry (remove pos at-posns))

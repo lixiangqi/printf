@@ -145,8 +145,10 @@
          [editor aggre-text])
     
     ;; Timeline
-    (define timeline-data (append (get-timeline-data) 
-                                  (get-changed-data)))
+    (define timeline-data 
+      (if (contain-changed-data?)
+          (append (get-timeline-data) (get-changed-data))
+          (get-timeline-data)))
 
     (define max-length 0)
     (unless (null? timeline-data)

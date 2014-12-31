@@ -11,7 +11,8 @@
          get-aggregate-data
          get-timeline-data
          get-changed-data
-         browser-visible?)
+         browser-visible?
+         contain-changed-data?)
 
 (define log-data null)
 (define snip-size 30)
@@ -162,4 +163,5 @@
   (set! changed-table #f)
   data)
 
+(define (contain-changed-data?) (not (null? identifiers)))
 (define (browser-visible?) show-browser?)
