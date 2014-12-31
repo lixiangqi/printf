@@ -70,6 +70,21 @@
       [else
        (raise-syntax-error #f "invalid-medic-expression" stx)]))
   
+  (define (reverse-hashtable t)
+    (for-each (lambda (key)
+                (hash-set! t key (reverse (hash-ref t key))))
+              (hash-keys t)))
+  
+  (define (reverse-insert-table)
+    (for-each (lambda (key)
+                (let ([t (hash-ref insert-table key)])
+                  (reverse-hashtable t)))
+              (hash-keys insert-table)))
+  
+  (define (process-tables)
+    (reverse-insert-table)
+    (reverse-hashtable at-inserts))
+  
   (define (interpret-expr stx flag)
     (syntax-case stx (def in)
       [(def src-id #:src src-expr ...) (identifier? #'src-id)
@@ -93,13 +108,17 @@
              (for-each (lambda (e)
                          (interpret-match-expr e fn))
                        (syntax->list #'(expr ...))))
-           (list insert-table at-inserts template))]
+           (begin
+             (process-tables)
+             (list insert-table
+                   at-inserts
+                   template)))]
       [(op id ...) (equal? 'import (syntax->datum #'op))
        (let ([imported-ids (map 
                              (lambda (id) 
                                (let* ([layer-id (syntax->datum id)]
                                       [exported (env-exports (hash-ref global-env layer-id))])
-                                 (set! import-table (append import-table (list (cons layer-id exported))))
+                                 (set! import-table (cons (import-struct layer-id exported) import-table))
                                  exported))
                              (syntax->list #'(id ...)))])
          (set! imports (flatten imported-ids)))]
@@ -123,10 +142,10 @@
                 (raise-syntax-error 'refer-to-unbound-variable 
                                     (format "id = ~a" id)
                                     stx))
-              (if (member id (cdr (first lst)))
-                  (let ([found-expr (hash-ref (env-debug-table (hash-ref global-env (car (first lst)))) id)])
+              (if (member id (import-struct-exported (car lst)))
+                  (let ([found-expr (hash-ref (env-debug-table (hash-ref global-env (import-struct-layer-id (car lst)))) id)])
                      (for-each (lambda (e) (interpret-match-expr e fn)) (syntax->list found-expr)))
-                  (iterate (rest lst))))]))]
+                  (iterate (cdr lst))))]))]
       
       [(with-behavior f s)
        (let* ([fun (syntax->datum #'f)]
@@ -162,10 +181,10 @@
         (if (equal? 'with-start (first scope-ids))
             (let* ([key (cons 'start (second scope-ids))]
                    [exist (hash-ref table key '())])
-              (hash-set! table key (append exist (list (cons loc inserts)))))
+              (hash-set! table key (cons (insert-struct loc inserts) exist)))
             (for-each (lambda (i)
                         (let ([exist (hash-ref table i '())])
-                          (hash-set! table i (append exist (list (cons loc inserts))))))
+                          (hash-set! table i (cons (insert-struct loc inserts) exist))))
                    scope-ids))))
     
     (syntax-case stx (on-entry on-exit)
@@ -224,7 +243,7 @@
     
     (define (add-at-insert s)
       (let ([exist (hash-ref at-inserts fn '())])
-        (hash-set! at-inserts fn (append exist (list s)))))
+        (hash-set! at-inserts fn (cons s exist))))
     
     (syntax-case stx (on-entry on-exit ref)
       [[on-entry (ref src-id)]
@@ -280,10 +299,10 @@
                 (raise-syntax-error 'refer-to-unbound-variable 
                                     (format "id = ~v" id)
                                     stx))
-              (if (member id (cdr (first lst)))
-                  (let ([found-expr (hash-ref (env-src-table (hash-ref global-env (car (first lst)))) id)])
+              (if (member id (import-struct-exported (car lst)))
+                  (let ([found-expr (hash-ref (env-src-table (hash-ref global-env (import-struct-layer-id (car lst)))) id)])
                     (map interpret-src-expr found-expr))
-                  (iterate (rest lst))))]))]
+                  (iterate (cdr lst))))]))]
       
       [(log v)
        (attach-stx-property stx #'v)]
@@ -321,4 +340,7 @@
                (syntax->list #'((layer layer-id layer-expr ...) ...)))]
     [else
      (raise-syntax-error #f "invalid-medic-expression" stx)])
-  (list insert-table at-inserts template))
+  (process-tables)
+  (list insert-table
+        at-inserts
+        template))

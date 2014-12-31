@@ -62,5 +62,6 @@
                      (λ (e) 
                        (make-trace-browser fn)
                        (raise e))])
+      (printf "medic-at-table=~v\n" medic-at-table)
       (eval/annotations mod annotate-module? annotate-stx medic-insert-table medic-at-table medic-template))
     (make-trace-browser fn)))

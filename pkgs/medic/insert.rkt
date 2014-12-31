@@ -41,6 +41,8 @@
       [else stx]))
   
   (define (insert-stx stx insert-table at-table)
+    (printf "insert-table=~v\n" insert-table)
+    (printf "at-table=~v\n" at-table)
     (printf "insert-stx: stx=~v\n" stx)
     (define top-level-ids '())
     (define let-exit '())
@@ -132,10 +134,10 @@
       (define result-stx '())
       (unless (null? inserts)
         (for-each (lambda (entry)
-                    (when (equal? (car entry) loc)
+                    (when (equal? (insert-struct-loc entry) loc)
                       (if (equal? loc 'entry)
-                          (set! result-stx (append (map convert-stx (cdr entry)) result-stx))
-                          (set! result-stx (append result-stx (map convert-stx (cdr entry)))))))
+                          (set! result-stx (append (map convert-stx (insert-struct-exprs entry)) result-stx))
+                          (set! result-stx (append result-stx (map convert-stx (insert-struct-exprs entry)))))))
                   inserts))
       result-stx)
     

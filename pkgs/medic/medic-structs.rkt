@@ -21,3 +21,7 @@
 ; finer-at-insert structure
 ; constructed on top of at-insert structure, where posns contains the found expression positions in editor
 (struct finer-at-insert ([scope #:mutable] target [posns #:mutable] loc exprs) #:transparent)
+
+(struct import-struct (layer-id exported) #:transparent)
+
+(struct insert-struct (loc exprs) #:transparent)

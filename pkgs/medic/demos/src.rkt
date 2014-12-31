@@ -6,5 +6,5 @@
 ;    (define (get-a) (+ 1 a))))
 
 (define (f x)
-  (/ x 0))
+  (/ x 1))
 (f 1)
