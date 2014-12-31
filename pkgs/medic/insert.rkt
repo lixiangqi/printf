@@ -41,6 +41,7 @@
       [else stx]))
   
   (define (insert-stx stx insert-table at-table)
+    (printf "insert-stx: stx=~v\n" stx)
     (define top-level-ids '())
     (define let-exit '())
     (define internal-let? #f)
@@ -290,6 +291,7 @@
             (define-values (entry-exprs exit-exprs) (get-lambda-exit-entry-inserts id))
             (set! let-exit 'no-exit-exprs)
             (set! internal-let? #f)
+            (printf "lambda id=~v, clause=~v\n" id clause)
             (when (and (= (length body-list) 1) (not (null? exit-exprs)))
               (set! let-exit exit-exprs))
             (define new-bodies (map (lambda (e) (expression-iterator e all-bound-vars id)) body-list))

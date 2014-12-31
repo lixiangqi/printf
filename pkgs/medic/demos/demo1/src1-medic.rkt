@@ -2,7 +2,7 @@
 
 ; test whether variables in debugging program have the right binding
 (layer layer1 
-       (in #:file "src1.rkt"
+       (in #:module "src1.rkt"
            ; module-level border-expr
            [on-entry (define x 1)
                      (define y 2)]

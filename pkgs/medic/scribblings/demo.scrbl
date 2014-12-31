@@ -57,7 +57,7 @@ Basic module-level and function-level insertion of some debugging code.
 @codeblock{
 #lang medic
 (layer layer1 
-       (in #:file "src1.rkt"
+       (in #:module "src1.rkt"
            ; module-level border-expr
            [on-entry (define x 1)
                      (define y 2)]
@@ -68,7 +68,7 @@ Basic module-level and function-level insertion of some debugging code.
            [(at (define n 9)) [on-exit (log "module at:")
                                        (log n)]]
            ; function-level at-expr and border-expr
-           [(fact) 
+           [(f) 
             [(at (with-start "(* x (sub1")) [on-entry (log "else branch:") (log n)]]
             [on-entry (define y 30)
                       (log "function entry:")
@@ -106,7 +106,7 @@ The @racket[at-expr] pattern matching with @racket[before-expr] and @racket[afte
 #lang medic
 
 (layer layer1 
-       (in #:file "src.rkt"
+       (in #:module "src.rkt"
            ; match two instances of (inc-counter)
            [(at (inc-counter)) [on-entry (log "[1]calling inc-counter")]]
            
@@ -151,7 +151,7 @@ Multiple functions involved in the debugging activity.
 #lang medic
 
 (layer layer1 
-       (in #:file "src3.rkt"
+       (in #:module "src3.rkt"
            ; scope of multiple functions 
            [(g inc) [on-entry (log "function ~a: x = ~a" @"@"function-name x)]]
            ; fun-pattern-expr
@@ -174,7 +174,7 @@ Multiple functions involved in the debugging activity.
 #lang medic
 
 (layer layer1 
-       (in #:file "src4.rkt"
+       (in #:module "src4.rkt"
            (with-behavior f "Calling f: sum of @"@",x squared and @"@",y squared is @"@"ret")
            [on-exit (log (f 3 4))
                     (log (f 4 5))]))
@@ -218,7 +218,7 @@ Multiple functions involved in the debugging activity.
        (def log-function-entry 
          #:debug 
          [each-function [on-entry (log "function ~a entered" @"@"function-name)]])
-       (in #:file "src.rkt"
+       (in #:module "src.rkt"
            [on-entry (ref init-defs)]
            [(at (with-start "(define")) [on-entry (ref inc-id-count)]]
            (ref log-function-entry)
@@ -226,8 +226,8 @@ Multiple functions involved in the debugging activity.
 
 (layer layer2
        (import layer1)
-       (in #:file "f.rkt"
+       (in #:module "f.rkt"
            (ref log-function-entry))
-       (in #:file "src.rkt"
+       (in #:module "src.rkt"
            [on-exit (log t)]))
 }

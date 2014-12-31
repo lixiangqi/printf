@@ -1,7 +1,7 @@
 #lang medic
 
 (layer layer1 
-       (in #:file "src2.rkt"
+       (in #:module "src2.rkt"
            ; match two instances of (inc-counter)
            [(at (inc-counter)) [on-entry (log "[1]calling inc-counter")]]
            

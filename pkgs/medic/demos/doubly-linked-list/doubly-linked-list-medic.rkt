@@ -1,7 +1,7 @@
 #lang medic
 
 (layer layer1 #:enable #f
-       (in #:file "doubly-linked-list.rkt"
+       (in #:module "doubly-linked-list.rkt"
            [on-exit
             (define dlist (new doubly-linked-list%))
             ; add ten elements
@@ -15,7 +15,7 @@
               (log "after removal: i=~a, datum=~a" i (send dlist element-at i)))]))
 
 (layer layer2
-       (in #:file "doubly-linked-list.rkt"
+       (in #:module "doubly-linked-list.rkt"
            [on-exit
             (define dlist (new doubly-linked-list%))
             (for ([i (reverse (build-list 10 values))]) (send dlist add-at 0 i))

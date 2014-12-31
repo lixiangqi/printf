@@ -11,7 +11,7 @@
        (def log-function-entry 
          #:debug 
          [each-function [on-entry (log "function ~a entered" @function-name)]])
-       (in #:file "src5.rkt"
+       (in #:module "src5.rkt"
            [on-entry (ref init-defs)]
            [(at (with-start "(define")) [on-entry (ref inc-id-count)]]
            (ref log-function-entry)
@@ -19,7 +19,7 @@
 
 (layer layer2
        (import layer1)
-       (in #:file "f.rkt"
+       (in #:module "f.rkt"
            (ref log-function-entry))
-       (in #:file "src5.rkt"
+       (in #:module "src5.rkt"
            [on-exit (log t)]))

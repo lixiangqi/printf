@@ -1,4 +1,5 @@
 #lang racket
+(require syntax/quote)
 
 (require "medic-structs.rkt")
 
@@ -14,7 +15,7 @@
 (define-syntax-rule (module-begin form ...)
   (#%module-begin 
    (provide medic-table)
-   (define medic-table (interp #'(begin form ...)))))
+   (define medic-table (interp (quote-syntax/keep-srcloc (begin form ...))))))
 
 (define (interp stx)
   
@@ -67,18 +68,20 @@
       [(layer layer-id layer-expr ...) (identifier? #'layer-id)
        (interpret-layer-form (syntax/loc stx (layer layer-id #:enable #t layer-expr ...)))]                                          
       [else
-       (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]))
+       (raise-syntax-error #f "invalid-medic-expression" stx)]))
   
   (define (interpret-expr stx flag)
     (syntax-case stx (def in)
       [(def src-id #:src src-expr ...) (identifier? #'src-id)
        (if (member (syntax->datum #'src-id) imports)
-           (error 'conflicting-identifiers "identifier ~v in expr = ~v already imported" (syntax->datum #'src-id) (syntax->datum stx)) 
+           (raise-syntax-error 'conflicting-identifiers 
+                               (format "identifier ~v already imported" (syntax->datum #'src-id))
+                               stx)
            (let ([expands (flatten (map interpret-src-expr (syntax->list #'(src-expr ...))))])
              (hash-set! src-table (syntax->datum #'src-id) expands)))]
       [(def debug-id #:debug expr ...) (identifier? #'debug-id) ; expr ... is lazy evaluated, may contain unexpanded (ref ...) form
        (hash-set! debug-table (syntax->datum #'debug-id) #'(expr ...))]
-      [(in #:file id expr ...)
+      [(in #:module id expr ...)
        (if flag
            (let ([fn (path->string 
                       (resolved-module-path-name 
@@ -103,7 +106,7 @@
       [(op id ...) (equal? 'export (syntax->datum #'op))
        (set! exports (map syntax->datum (syntax->list #'(id ...))))] 
       [else
-       (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]))
+       (raise-syntax-error #f "invalid-medic-expression" stx)]))
   
   ; interpret-match-expr: syntax string-of-file-name -> void
   (define (interpret-match-expr stx fn)
@@ -117,7 +120,9 @@
            [else
             (let iterate ([lst import-table])
               (when (null? lst) 
-                (error 'refer-to-unbound-variable "id = ~a in expr = ~a\n" id (syntax->datum stx)))
+                (raise-syntax-error 'refer-to-unbound-variable 
+                                    (format "id = ~a" id)
+                                    stx))
               (if (member id (cdr (first lst)))
                   (let ([found-expr (hash-ref (env-debug-table (hash-ref global-env (car (first lst)))) id)])
                      (for-each (lambda (e) (interpret-match-expr e fn)) (syntax->list found-expr)))
@@ -213,7 +218,7 @@
                  (syntax->list #'(border-expr ...)))]
       
       [else
-       (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]))
+       (raise-syntax-error #f "invalid-medic-expression" stx)]))
   
   (define (interpret-border-expr stx fn scope target-exp [before '()] [after '()])
     
@@ -228,7 +233,9 @@
            [found 
             (interpret-border-expr (quasisyntax/loc stx [on-entry #,@found]) fn scope target-exp before after)]
            [else
-            (error 'refer-to-unbound-variable "id = ~a in expr = ~a\n" (syntax->datum #'src-id) (syntax->datum stx))]))]
+            (raise-syntax-error 'refer-to-unbound-variable 
+                                (format "id = ~a" (syntax->datum #'src-id))
+                                stx)]))]
       
       [[on-entry src-expr ...]
        (let* ([exprs (map interpret-src-expr (syntax->list #'(src-expr ...)))]
@@ -241,7 +248,9 @@
            [found 
             (interpret-border-expr (quasisyntax/loc stx [on-exit #,@found]) fn scope target-exp before after)]
            [else
-            (error 'refer-to-unbound-variable "id = ~a in expr = ~a\n" (syntax->datum #'src-id) (syntax->datum stx))]))]
+            (raise-syntax-error 'refer-to-unbound-variable
+                                (format "id = ~a" (syntax->datum #'src-id))
+                                stx)]))]
       
       [[on-exit src-expr ...]
        (let* ([exprs (map interpret-src-expr (syntax->list #'(src-expr ...)))]
@@ -268,7 +277,9 @@
            [else
             (let iterate ([lst import-table])
               (when (null? lst)
-                (error 'refer-to-unbound-variable "id = ~a in expr = ~a\n" id (syntax->datum stx)))
+                (raise-syntax-error 'refer-to-unbound-variable 
+                                    (format "id = ~v" id)
+                                    stx))
               (if (member id (cdr (first lst)))
                   (let ([found-expr (hash-ref (env-src-table (hash-ref global-env (car (first lst)))) id)])
                     (map interpret-src-expr found-expr))
@@ -282,13 +293,13 @@
                         'stamp (cons #f #f))]
       
       [(aggregate) 
-       (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]
+       (raise-syntax-error #f "invalid-medic-expression" stx)]
       
       [(aggregate v ...) 
        (attach-stx-property stx (syntax->list #'(v ...)))]
       
       [(same? id) (not (identifier? #'id))
-       (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))]      
+       (raise-syntax-error #f "invalid-medic-expression" stx)]      
       
       [(timeline id)
        (attach-stx-property stx #'id)]
@@ -309,5 +320,5 @@
                  (interpret-layer-form l)) 
                (syntax->list #'((layer layer-id layer-expr ...) ...)))]
     [else
-     (error 'invalid-medic-expression "expr = ~a\n" (syntax->datum stx))])
+     (raise-syntax-error #f "invalid-medic-expression" stx)])
   (list insert-table at-inserts template))

@@ -58,5 +58,9 @@
                             (let ([fn-str (path->string fn)])
                               (or (and medic-insert-table (hash-has-key? medic-insert-table fn-str))
                                   (and medic-at-table (hash-has-key? medic-at-table fn-str)))))])
-    (eval/annotations mod annotate-module? annotate-stx medic-insert-table medic-at-table medic-template)
+    (with-handlers ([exn:fail?
+                     (λ (e) 
+                       (make-trace-browser fn)
+                       (raise e))])
+      (eval/annotations mod annotate-module? annotate-stx medic-insert-table medic-at-table medic-template))
     (make-trace-browser fn)))

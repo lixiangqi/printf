@@ -1,7 +1,7 @@
 #lang medic
 
 (layer layer1 
-       (in #:file "src3.rkt"
+       (in #:module "src3.rkt"
            ; scope of multiple functions 
            [(g inc) [on-entry (log "function ~a: x = ~a" @function-name x)]]
            ; fun-pattern-expr

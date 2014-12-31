@@ -30,7 +30,7 @@ Here is the grammar for the Medic metaprogramming language:
               debug-expr]
   [debug-expr (def debug-src-id #:src source-expr source-expr ...)
               (def debug-id #:debug match-expr match-expr ...)
-              (in #:file module-path match-expr match-expr ...)]
+              (in #:module module-path match-expr match-expr ...)]
   [match-expr (with-behavior f template)
               (ref debug-id)
               insert-expr 
@@ -86,16 +86,16 @@ There are some points about the language worth noting:
         identifier @racketvarfont{debug-id} in the form @tt{(@racket[def] @racketvarfont{debug-id} @racket[#:debug] @racketvarfont{match-expr} @racketvarfont{match-expr} ...)} is bound
         to a sequence of debugging expressions, and the expression @tt{(@racket[ref] @racketvarfont{debug-id})} returns the corresponding
         debugging expressions.} 
-  @item{In the form @tt{(@racket[in] @racket[#:file] @racketvarfont{module-path match-expr match-expr} ...)}, the specification for @racketvarfont{module-path} 
+  @item{In the form @tt{(@racket[in] @racket[#:module] @racketvarfont{module-path match-expr match-expr} ...)}, the specification for @racketvarfont{module-path} 
         can be three kinds of paths: a relative path, an absolute path, or a library path. For example, the following are
         acceptable specifications for @racketvarfont{module-path}.
         @racketblock[
         (code:comment "a relative path")
-        (in #:file "src.rkt" ....)
+        (in #:module "src.rkt" ....)
         (code:comment "an absolute path")
-        (in #:file (file "/home/xiangqi/test/src.rkt" ....))
+        (in #:module (file "/home/xiangqi/test/src.rkt" ....))
         (code:comment "a library path")
-        (in #:file test/src ....)
+        (in #:module test/src ....)
         ]}
   @item{The form @tt{(@racket[with-behavior] @racketvarfont{f template})} defines the behavior of the @racketvarfont{f} function, which is 
                  only useful with the tracing @racket[log] function. See @secref["log"] for more information about the usage.}

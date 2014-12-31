@@ -85,6 +85,7 @@
                    [inserted (expand (insert-stx (check-module-form (expand stx) m fn) insert-table new-at-table))]
                    [module-ized-exp (annotator (check-module-form inserted m fn) template)]
                    [second (read in-port)])
+              (printf "orig-stx=~v, source=~v\n" stx (syntax-source stx))
               (unless (eof-object? second)
                 (raise-syntax-error
                  'load-module/annotate

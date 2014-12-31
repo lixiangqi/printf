@@ -33,7 +33,7 @@ the same as the number of @racket[v]s.} Examples are as follows:
 
 @defproc[(node [v object?] [node-label any/c ""] [color (or/c string? #f) #f])
          void?]{
-Add a node to the Graph pane. The optional arguments @racket[node-label] and @racket[color] specify node
+Adds a node to the Graph pane. The optional arguments @racket[node-label] and @racket[color] specify node
 properties. If @racket[node] is called multiple times for the same @racket[v], only one node corresponding
 to @racket[v] is shown in the Graph pane.
 }
@@ -83,7 +83,7 @@ and evaluates the transformed source program. If there is any debugging traces p
 library, a graphical trace browser is opened.                                               
 }
 
-@section[#:style '(toc)]{Using the Medic Debugger}
+@section{Using the Medic Debugger}
 Debugging with the Medic debugger involves three kinds of programs: source programs, Medic programs (by convention
 ending with ``-medic.rkt''), and a program-starting
 script. Medic programs represent debugging instructions about the source programs and a program-starting
@@ -91,7 +91,6 @@ script runs the Medic programs and starts debugging the source programs. After t
 script, a debugging graphical interface is presented, which consists of four panes: a Log pane, Graph pane, 
 Aggregate pane and Timeline pane.
 
-@local-table-of-contents[]
 @subsection[#:tag "log"]{Tracing Log}
 Like the traditional print-like expressions, the tracing @racket[log] produces linear and textual debugging information
 to identify problems in program execution. However, @racket[log] is more advanced than the traditional print-like expression in 
@@ -155,11 +154,11 @@ Suppose we want to insert some @racket[log] expressions to see how the tree is t
 #lang medic
 
 (layer left-path
-       (in #:file "find-path.rkt"
+       (in #:module "find-path.rkt"
            [(at (with-start "(if left-p")) [on-entry (log "left branch: ~a, ~a" (cadr t) left-p)]]))
 
 (layer right-path
-       (in #:file "find-path.rkt"
+       (in #:module "find-path.rkt"
            [(at (with-start "(if right-p")) [on-entry (log "right branch: ~a, ~a" (caddr t) right-p)]]))
 }
 We start a debugging session, and a trace browser is opened after the evaluation of Medic programs and augmented source programs.
@@ -291,7 +290,7 @@ implementation.
 #lang medic
 
 (layer layer1 
-       (in #:file "doubly-linked-list.rkt"
+       (in #:module "doubly-linked-list.rkt"
            [on-exit
             (define dlist (new doubly-linked-list%))
             ; add ten elements
@@ -316,7 +315,7 @@ the problem instantly.
 #lang medic
 ;; disable this layer first
 (layer layer1 #:enable #f
-       (in #:file "doubly-linked-list.rkt"
+       (in #:module "doubly-linked-list.rkt"
            [on-exit
             (define dlist (new doubly-linked-list%))
             ; add ten elements
@@ -331,7 +330,7 @@ the problem instantly.
               
 ;; add a new layer using graph visualization
 (layer layer2
-       (in #:file "doubly-linked-list.rkt"
+       (in #:module "doubly-linked-list.rkt"
            [on-exit
             (define dlist (new doubly-linked-list%))
             (for ([i (reverse (build-list 10 values))]) (send dlist add-at 0 i))
@@ -377,7 +376,7 @@ To illustrate, the source program and Medic program are as follows.
 #lang medic
 
 (layer layer1
-       (in #:file "fact-iter.rkt"
+       (in #:module "fact-iter.rkt"
            [(fact) [on-entry (aggregate x a)]]))
 }
 
@@ -426,7 +425,7 @@ individual value.
 #lang medic
 
 (layer layer1
-       (in #:file "count.rkt"
+       (in #:module "count.rkt"
            [(count-length) [on-entry (timeline count)
                                      (timeline v)
                                      (timeline (null? v))]]))
@@ -456,7 +455,7 @@ individual value.
 #lang medic
 
 (layer layer1
-       (in #:file "fact.rkt"
+       (in #:module "fact.rkt"
            [(fact) [on-entry (assert (> x 0))]]))
 }
 The timeline:
@@ -504,7 +503,7 @@ The timeline:
 (layer layer1
        (def check-changed #:src (same? x)
                                 (same? y))
-       (in #:file "same.rkt"
+       (in #:module "same.rkt"
            [(at (define y (list 1 -2 3 4 -5))) [on-exit (ref check-changed)]]
            [on-exit (ref check-changed)]))       
 }
