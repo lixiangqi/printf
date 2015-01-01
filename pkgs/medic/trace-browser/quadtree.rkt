@@ -132,9 +132,11 @@
          (when (< ny y1) (set! y1 ny))
          (when (> nx x2) (set! x2 nx))
          (when (> ny y2) (set! y2 ny))
-         (set! xs (append xs (list nx)))
-         (set! ys (append ys (list ny)))))
+         (set! xs (cons nx xs))
+         (set! ys (cons ny ys))))
      data)
+    (set! xs (reverse xs))
+    (set! ys (reverse ys))
     ; squarify bounds
     (define dx (- x2 x1))
     (define dy (- y2 y1))

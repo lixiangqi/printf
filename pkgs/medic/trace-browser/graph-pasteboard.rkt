@@ -170,12 +170,10 @@
       (define to (send e get-to-node))
       (send from incr-weight)
       (send to incr-weight)
-      (if (hash-has-key? neighbors from)
-          (hash-set! neighbors from (append (hash-ref neighbors from) (list to)))
-          (hash-set! neighbors from (list to)))
-      (if (hash-has-key? neighbors to)
-          (hash-set! neighbors to (append (hash-ref neighbors to) (list from)))
-          (hash-set! neighbors to (list from))))
+      (define from-neighbor (hash-ref neighbors from '()))
+      (define to-neighbor (hash-ref neighbors to '()))
+      (hash-set! neighbors from (cons to from-neighbor))
+      (hash-set! neighbors to (cons from to-neighbor)))
     
     (define/public (layout-nodes)
       (let loop ([t (tick)])
@@ -305,7 +303,8 @@
         (define flag #f)
         (when (or (not (send quad get-point))
                          (not (eq? (send quad get-point) node)))
-          (let* ([dx (- (send quad get-cx) (send node get-x))]
+          (let* ([dx (- (send quad get-cx) 
+                        (send node get-x))]
                  [dy (- (send quad get-cy) (send node get-y))]
                  [dw (- x2 x1)]
                  [dn (+ (sqr dx) (sqr dy))])

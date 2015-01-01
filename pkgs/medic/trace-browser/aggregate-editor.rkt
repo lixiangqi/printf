@@ -76,9 +76,10 @@
              (define compare-v (list-ref series compare-point))
              (for-each (lambda (compare-e e)
                          (if (equal? compare-e e)
-                             (set! to-insert (append to-insert (list (list #f e))))
-                             (set! to-insert (append to-insert (list (list #t e))))))
+                             (set! to-insert (cons (list #f e) to-insert))
+                             (set! to-insert (cons (list #t e) to-insert))))
                        compare-v v)
+             (set! to-insert (reverse to-insert))
              (for-each (lambda (p)
                          (cond 
                            [(first p)
