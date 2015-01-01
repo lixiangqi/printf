@@ -14,7 +14,7 @@
          browser-visible?
          contain-changed-data?)
 
-(define log-data null)
+(define log-data '())
 (define snip-size 30)
 (define raw-edges (make-hash))
 (define raw-nodes '())
@@ -28,22 +28,20 @@
 
 (define (add-log str layer-id behavior?)
   (set! show-browser? #t)
-  (set! log-data (append log-data (list (list str layer-id behavior?)))))
+  (set! log-data (cons (list str layer-id behavior?) log-data)))
 
-(define (get-log-data) log-data)
+(define (get-log-data) (reverse log-data))
 
 (define (record-aggregate key labels vals)
   (define pairs (map (lambda (l v) (cons l v)) labels vals))
   (set! show-browser? #t)
-  (cond
-    [(hash-has-key? aggre-table key)
-     (hash-set! aggre-table key (append (hash-ref aggre-table key) (list pairs)))]
-    [else
-     (set! aggre-sequence (append aggre-sequence (list key)))
-     (hash-set! aggre-table key (list pairs))]))
+  (define v (hash-ref aggre-table key '()))
+  (when (null? v)
+    (set! aggre-sequence (cons key aggre-sequence)))
+  (hash-set! aggre-table key (cons pairs v)))
 
 (define (add-node n node-label color)
-  (set! raw-nodes (append raw-nodes (list (list n node-label color)))))
+  (set! raw-nodes (cons (list n node-label color) raw-nodes)))
 
 (define (add-edge from to edge-label from-label to-label color)
   (define (valid-string? s)
@@ -119,26 +117,24 @@
             (let* ([found (hash-ref changed-table i)]
                    [last-val (second (last found))]
                    [is-same? (check-same? copy last-val)])
-              (hash-set! changed-table i (append found (list (list label-str copy is-same?)))))
+              (hash-set! changed-table i (cons (list label-str copy is-same?) found)))
             (loop (add1 i)))
         (begin
           (set! identifiers (append identifiers (list id-stx)))
-          (hash-set! changed-table i (list (list label-str copy #t)))))))
+          (hash-set! changed-table i (cons (list label-str copy #t) '()))))))
 
 (define (record-timeline key label value boolean?)
   (set! show-browser? #t)
-  (cond
-    [(hash-has-key? timeline-table key)
-     (hash-set! timeline-table key (append (hash-ref timeline-table key) (list (list label value boolean?))))]
-    [else
-     (set! timeline-sequence (append timeline-sequence (list key)))
-     (hash-set! timeline-table key (list (list label value boolean?)))]))
+  (define v (hash-ref timeline-table key '()))
+  (when (null? v)
+    (set! timeline-sequence (cons key timeline-sequence)))
+  (hash-set! timeline-table key (cons (list label value boolean?) v)))
 
-(define (get-raw-graph) (cons raw-nodes raw-edges))
+(define (get-raw-graph) (cons (reverse raw-nodes) raw-edges))
 
 (define (get-timeline-data)
-  (define data (for/list ([i timeline-sequence])
-                 (let* ([val (hash-ref timeline-table i)]
+  (define data (for/list ([i (reverse timeline-sequence)])
+                 (let* ([val (reverse (hash-ref timeline-table i))]
                         [label (first (first val))]
                         [values (map second val)]
                         [boolean? (third (first val))])
@@ -148,14 +144,14 @@
   data)
 
 (define (get-aggregate-data)
-  (define data (map (lambda (n) (hash-ref aggre-table n)) aggre-sequence))
+  (define data (map (lambda (n) (reverse (hash-ref aggre-table n))) (reverse aggre-sequence)))
   (set! aggre-table #f)
   (set! aggre-sequence null)
   data)
 
 (define (get-changed-data)
   (define data (for/list ([i (in-range (length identifiers))])
-                 (let* ([val (hash-ref changed-table i)]
+                 (let* ([val (reverse (hash-ref changed-table i))]
                         [label (first (first val))]
                         [values (map third val)])
                    (list label #t values))))
