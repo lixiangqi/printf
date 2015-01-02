@@ -187,50 +187,38 @@
        (interpret-at-expr stx fn (map (lambda (i) (format "~a" i)) scope-ids))]))
   
   (define (interpret-at-expr stx fn scope)
-    (define (interpret-location-expr stx)
-      (syntax-case stx (with-start)
-        [(with-start part-of-expr)
-         (format "~a" (syntax->datum #'part-of-expr))]
-        [else (format "~a" (syntax->datum stx))]))
-    
-    (syntax-case stx (at with-pattern)
-      [[(at (with-pattern part-of-expr)) border-expr ...]
-       (let ([str (format "~a" (syntax->datum #'part-of-expr))])
-         (for-each (lambda (e) 
-                     (interpret-border-expr e fn scope str)) 
-                   (syntax->list #'(border-expr ...))))]
-      
+    (syntax-case stx (at)
       [[(at location-expr [#:before expr1 ...] [#:after expr2 ...]) border-expr ...]
-       (let ([target-exp (format "~a" (syntax->datum #'location-expr))]
-             [before-exp (map interpret-location-expr (syntax->list #'(expr1 ...)))]
-             [after-exp (map interpret-location-expr (syntax->list #'(expr2 ...)))])
+       (let ([target-exp (syntax->datum #'location-expr)]
+             [before-exp (map syntax->datum (syntax->list #'(expr1 ...)))]
+             [after-exp (map syntax->datum (syntax->list #'(expr2 ...)))])
          (for-each (lambda (e) 
-                     (interpret-border-expr e fn scope target-exp before-exp after-exp)) 
+                     (interpret-border-expr e fn scope target-exp before-exp after-exp stx)) 
                    (syntax->list #'(border-expr ...))))]
       
       [[(at location-expr [#:before expr ...]) border-expr ...]
-       (let ([target-exp (format "~a" (syntax->datum #'location-expr))]
-             [before-exp (map interpret-location-expr (syntax->list #'(expr ...)))])
+       (let ([target-exp (syntax->datum #'location-expr)]
+             [before-exp (map syntax->datum (syntax->list #'(expr ...)))])
          (for-each (lambda (e) 
-                     (interpret-border-expr e fn scope target-exp before-exp)) 
+                     (interpret-border-expr e fn scope target-exp before-exp '() stx)) 
                    (syntax->list #'(border-expr ...))))]
       
       [[(at location-expr [#:after expr ...]) border-expr ...]
-       (let ([target-exp (format "~a" (syntax->datum #'location-expr))]
-             [after-exp (map interpret-location-expr (syntax->list #'(expr ...)))])
+       (let ([target-exp (syntax->datum #'location-expr)]
+             [after-exp (map syntax->datum (syntax->list #'(expr ...)))])
          (for-each (lambda (e) 
-                     (interpret-border-expr e fn scope target-exp '() after-exp)) 
+                     (interpret-border-expr e fn scope target-exp '() after-exp stx)) 
                    (syntax->list #'(border-expr ...))))]
       
       [[(at location-expr) border-expr ...]
        (for-each (lambda (e) 
-                   (interpret-border-expr e fn scope (format "~a" (syntax->datum #'location-expr)))) 
+                   (interpret-border-expr e fn scope (syntax->datum #'location-expr) '() '() stx)) 
                  (syntax->list #'(border-expr ...)))]
       
       [else
        (raise-syntax-error #f "invalid-medic-expression" stx)]))
   
-  (define (interpret-border-expr stx fn scope target-exp [before '()] [after '()])
+  (define (interpret-border-expr stx fn scope target-exp [before '()] [after '()] [expr #f])
     
     (define (add-at-insert s)
       (let ([exist (hash-ref at-inserts fn '())])
@@ -249,7 +237,7 @@
       
       [[on-entry src-expr ...]
        (let* ([exprs (map interpret-src-expr (syntax->list #'(src-expr ...)))]
-              [at-struct (at-insert scope target-exp before after 'entry exprs)])
+              [at-struct (at-insert expr scope target-exp before after 'entry exprs)])
          (add-at-insert at-struct))]
       
       [[on-exit (ref src-id)]
@@ -264,7 +252,7 @@
       
       [[on-exit src-expr ...]
        (let* ([exprs (map interpret-src-expr (syntax->list #'(src-expr ...)))]
-              [at-struct (at-insert scope target-exp before after 'exit exprs)])
+              [at-struct (at-insert expr scope target-exp before after 'exit exprs)])
          (add-at-insert at-struct))]))
   
   (define (interpret-src-expr stx)

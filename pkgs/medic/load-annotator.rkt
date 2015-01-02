@@ -9,6 +9,7 @@
 
 ; filename: complete-path-string
 (define (build-input-port filename at-table)
+  (printf "at-table=~v\n" at-table)
   (define text (make-object text%))
   (send text insert-file filename)
   (define new-at-table
