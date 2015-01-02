@@ -193,8 +193,8 @@
          (format "~a" (syntax->datum #'part-of-expr))]
         [else (format "~a" (syntax->datum stx))]))
     
-    (syntax-case stx (at with-start)
-      [[(at (with-start part-of-expr)) border-expr ...]
+    (syntax-case stx (at with-pattern)
+      [[(at (with-pattern part-of-expr)) border-expr ...]
        (let ([str (format "~a" (syntax->datum #'part-of-expr))])
          (for-each (lambda (e) 
                      (interpret-border-expr e fn scope str)) 
