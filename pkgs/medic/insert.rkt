@@ -232,16 +232,7 @@
             (hash-remove! insert-table id)
             (when (hash-has-key? insert-table 'each-function)
               (set! entry-exprs (append (match-border-insert 'each-function 'entry) entry-exprs))
-              (set! exit-exprs (append (match-border-insert 'each-function 'exit) exit-exprs)))
-            (let ([start-lst (filter (lambda (p) (and (pair? (car p)) (equal? (caar p) 'start)))
-                                     (hash->list insert-table))])
-              (for-each 
-               (lambda (p)
-                 (define str (string-replace (string-replace (cdar p) "(" "\\(") ")" "\\)"))
-                 (when (regexp-match (string-append "^" str) id)
-                   (set! entry-exprs (append (match-border-insert (car p) 'entry) entry-exprs))
-                   (set! exit-exprs (append (match-border-insert (car p) 'exit) exit-exprs))))
-               start-lst))))
+              (set! exit-exprs (append (match-border-insert 'each-function 'exit) exit-exprs)))))
         (values entry-exprs exit-exprs))
       
       (define (let/rec-values-annotator letrec?)

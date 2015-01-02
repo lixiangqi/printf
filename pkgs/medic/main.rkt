@@ -40,7 +40,6 @@
   ; - 'module
   ; - function name (string)
   ; - 'each-function
-  ; - (cons 'start part-of-fun-name-string) 
   (define insert-table (make-hash))
   
   ; at-inserts: map from complete path string to a list of at-insert structure
@@ -129,7 +128,7 @@
   
   ; interpret-match-expr: syntax string-of-file-name -> void
   (define (interpret-match-expr stx fn)
-    (syntax-case stx (ref at with-behavior each-function with-start each-expression)
+    (syntax-case stx (ref at with-behavior each-function each-expression)
       [(ref debug-id)
        (let* ([id (syntax->datum #'debug-id)]
               [expr (hash-ref debug-table id #f)])
@@ -159,10 +158,6 @@
       [[each-function to-insert ...]
        (for-each (lambda (e) (interpret-insert-expr e fn (list 'each-function))) (syntax->list #'(to-insert ...)))]
       
-      [[(with-start part-of-fun-name) to-insert ...]
-       (let ([str (format "~a" (syntax->datum #'part-of-fun-name))])
-         (for-each (lambda (e) (interpret-insert-expr e fn (list 'with-start str))) (syntax->list #'(to-insert ...))))]
-      
       [[(at expr ...) border-expr ...]
        (interpret-insert-expr stx fn (list 'module))]
       
@@ -178,14 +173,10 @@
   (define (interpret-insert-expr stx fn scope-ids)
     (define (insert-expr loc inserts)
       (let ([table (hash-ref insert-table fn)])
-        (if (equal? 'with-start (first scope-ids))
-            (let* ([key (cons 'start (second scope-ids))]
-                   [exist (hash-ref table key '())])
-              (hash-set! table key (cons (insert-struct loc inserts) exist)))
-            (for-each (lambda (i)
+        (for-each (lambda (i)
                         (let ([exist (hash-ref table i '())])
                           (hash-set! table i (cons (insert-struct loc inserts) exist))))
-                   scope-ids))))
+                   scope-ids)))
     
     (syntax-case stx (on-entry on-exit)
       [[on-entry src-expr ...]

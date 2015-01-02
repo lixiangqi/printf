@@ -35,7 +35,6 @@ Here is the grammar for the Medic metaprogramming language:
               (ref debug-id)
               insert-expr 
               [each-function insert-expr insert-expr ...]
-              [fun-pattern-expr insert-expr insert-expr ...]
               [(f f ...) insert-expr insert-expr ...]]
   [insert-expr border-expr
                at-expr]
@@ -48,7 +47,6 @@ Here is the grammar for the Medic metaprogramming language:
   [location-expr target-language-expression
                  at-pattern-expr]
   [at-pattern-expr (with-start part-of-target-language-expression)]
-  [fun-pattern-expr (with-start part-of-target-language-function-name)]
   [before-expr [#:before location-expr location-expr ...]]
   [after-expr [#:after location-expr location-expr ...]]
   [source-expr (ref debug-src-id)
@@ -56,7 +54,6 @@ Here is the grammar for the Medic metaprogramming language:
   [flag boolean]
   [template string]
   [part-of-target-language-expression string]
-  [part-of-target-language-function-name string]
   [f variable-not-otherwise-mentioned]
   [id variable-not-otherwise-mentioned]
   [layer-id variable-not-otherwise-mentioned]
