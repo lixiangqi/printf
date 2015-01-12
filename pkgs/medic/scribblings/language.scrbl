@@ -35,7 +35,8 @@ Here is the grammar for the Medic metaprogramming language:
               (ref debug-id)
               insert-expr 
               [each-function insert-expr insert-expr ...]
-              [(f f ...) insert-expr insert-expr ...]]
+              [(f f ...) insert-expr insert-expr ...]
+              [(c c ...) match-expr match-expr ...]]
   [insert-expr border-expr
                at-expr]
   [border-expr [on-entry source-expr source-expr ...]
