@@ -10,7 +10,7 @@
 ;(f 1)
 
 (define (inc-counter) (void))
-(define (inc x) (void))
+(define (inc x) (+ x 1))
 
 (define (g)
   (define x (inc 4))
@@ -21,3 +21,6 @@
   (define x (inc 4))
   (inc-counter)
   (+ x 2))
+
+(g)
+(f)

@@ -21,10 +21,9 @@
            #;[(f) 
             [(at (inc-counter) [#:before (define x (inc 4))] [#:after (+ x 1)])
             [on-entry (printf "entering inc-counter\n")]]]
-           [each-function [on-entry (printf "aha\n")]]
-           [(ff) [on-entry (printf "f entered.\n")]
-                 [on-exit (printf "f exited.\n")]
-                 ]))
+           [each-function [on-entry (log "~a" 'entered 'extra)
+                                    
+                                    ]]))
 
 
 ;(search-pos s #'(inc-counter) (list #'(define x (inc 4))) null)

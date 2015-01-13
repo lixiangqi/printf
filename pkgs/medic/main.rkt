@@ -284,8 +284,11 @@
        (attach-stx-property stx #'v)]
       
       [(log v1 v2 ...)
-       (syntax-property (syntax-property stx 'layer current-layer-id)
-                        'stamp (cons #f #f))]
+       (begin
+         (unless (equal? (length (regexp-match* "~a" (format "~a" (syntax->datum #'v1)))) (length (syntax->list #'(v2 ...))))
+           (raise-syntax-error #f "arity mismatch" stx))
+         (syntax-property (syntax-property stx 'layer current-layer-id)
+                          'stamp (cons #f #f)))]
       
       [(aggregate) 
        (raise-syntax-error #f "invalid-medic-expression" stx)]
