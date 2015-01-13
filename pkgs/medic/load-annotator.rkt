@@ -55,10 +55,11 @@
            (let ([positions (search-pos stx (at-insert-target entry) (at-insert-before entry) (at-insert-after entry))])
              (when (null? positions)
                (raise-syntax-error #f "unmatched-medic-expression" (at-insert-at-expr entry)))
-             (finer-at-insert (at-insert-scope entry) (at-insert-target entry) positions (at-insert-loc entry) (at-insert-exprs entry))))
+             (finer-at-insert (at-insert-at-expr entry) (at-insert-scope entry) (at-insert-target entry) positions (at-insert-loc entry) (at-insert-exprs entry))))
          at-table))
   ; filter out empty posns in finer-at-insert structure
   (set! new-at-table (filter (lambda (a) (not (null? (finer-at-insert-posns a)))) new-at-table))
+  (printf "new-at-table = ~v\n" new-at-table)
   new-at-table)
 
 ; fn: complete-path-string
@@ -80,7 +81,6 @@
               (let* ([inserted (expand (insert-stx (check-module-form (expand stx) m fn) insert-table new-at-table))]
                      [module-ized-exp (annotator (check-module-form inserted m fn) template)]
                      [second (read in-port)])
-                ;(printf "new-at-table
                 ;(printf "orig-stx=~v, source=~v\n" stx (syntax-source stx))
                 (unless (eof-object? second)
                   (raise-syntax-error

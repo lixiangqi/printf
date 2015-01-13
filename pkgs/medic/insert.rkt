@@ -362,8 +362,12 @@
                        (syntax->datum expr))])))
       (define ret (match-at-table expr new-stx #t bound-vars '() '() id))
       (or ret new-stx))
-    
-    (top-level-insert stx))
+    (begin0
+      (top-level-insert stx)
+      (for-each
+       (lambda (entry)
+         (raise-syntax-error #f "unmatched-medic-expression" (finer-at-insert-at-expr entry)))
+       at-table)))
   
   (define (disarm stx) (syntax-disarm stx code-insp))
   (define (rearm old new) (syntax-rearm new old))
