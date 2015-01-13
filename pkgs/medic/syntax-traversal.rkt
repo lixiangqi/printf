@@ -1,5 +1,7 @@
 #lang racket
-(require rackunit)
+
+(provide search-pos)
+
 ; match?: syntax syntax -> boolean
 ; m: original syntax
 ; n: syntax to match, may be at-pattern-expr containing '_
@@ -71,6 +73,7 @@
   (traverse s 'before e before after #f #f)
   res-pos)
 
+#|
 ; multiple matches
 (define s 
   #'(module src racket
@@ -85,9 +88,7 @@
        (define (f)
          (define x (inc 4))
          (inc-counter)
-         (+ x 3))))
-      )
-
+         (+ x 3)))))
 
 (search-pos s #'(inc-counter) (list #'(define x (inc 4))) null)
 
@@ -106,3 +107,4 @@
 (search-pos s #'(inc-counter) (list #'(define x (inc 4)) #'(+ x 1)) null)
 
 (search-pos s #'(inc-counter) null (list #'(+ x 1)))
+|#

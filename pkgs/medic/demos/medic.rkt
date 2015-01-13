@@ -16,4 +16,24 @@
 
 (layer layer1
        (in #:module "src.rkt"
-           [on-exit (void)]))
+           [(at (inc-counter) [#:before (define x (inc 4))])
+            [on-entry (printf "entering inc-counter\n")]]))
+
+
+;(search-pos s #'(inc-counter) (list #'(define x (inc 4))) null)
+;
+;(search-pos s #'(inc-counter) (list #'(define x (inc 4))) (list #'(+ x 1)))
+;
+;(search-pos s #'(inc-counter) (list #'(define x (inc 4))) (list #'(+ x 2)))
+;
+;(search-pos s #'(inc-counter) (list #'(define x (inc 4))) (list #'(+ x 1) #'(+ y 3)))
+;
+;(search-pos s #'(inc-counter2) (list #'(define x (inc 4))) (list #'(+ x 1)))
+;
+;(search-pos s #'(inc-counter) null null)
+;
+;(search-pos s #'(inc-counter) (list #'(define x 3)) null)
+;
+;(search-pos s #'(inc-counter) (list #'(define x (inc 4)) #'(+ x 1)) null)
+;
+;(search-pos s #'(inc-counter) null (list #'(+ x 1)))

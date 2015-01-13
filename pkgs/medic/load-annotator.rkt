@@ -3,32 +3,13 @@
 (require racket/gui
          syntax/modread
          "medic-structs.rkt"
-         "insert.rkt")
+         "insert.rkt"
+         "syntax-traversal.rkt")
 
 (provide eval/annotations)
 
 ; filename: complete-path-string
-(define (build-input-port filename at-table)
-  (printf "at-table=~v\n" at-table)
-  (define text (make-object text%))
-  (send text insert-file filename)
-  (define new-at-table
-    (map (lambda (entry)
-           (let* ([positions (send text find-string-all (at-insert-target entry) 'forward  0)]
-                  [filtered
-                   (filter (lambda (p)
-                             (and (if (equal? (at-insert-before entry) '())
-                                      #t
-                                      (andmap (lambda (e) (send text find-string e 'backward p)) (at-insert-before entry)))
-                                  (if (equal? (at-insert-after entry) '())
-                                      #t
-                                      (andmap (lambda (e) (send text find-string e 'forward p)) (at-insert-after entry)))))
-                           positions)]
-                  [possible-posns (map add1 filtered)]) ; need to increment one to match the position returned by syntax-position later
-             (finer-at-insert (at-insert-scope entry) (at-insert-target entry) possible-posns (at-insert-loc entry) (at-insert-exprs entry))))
-         at-table))
-  ; filter out empty posns in finer-at-insert structure
-  (set! new-at-table (filter (lambda (a) (not (null? (finer-at-insert-posns a)))) new-at-table))
+(define (build-input-port filename)
   (let ([p (open-input-file filename)])
     (port-count-lines! p)
     (let ([p (cond [(regexp-match-peek "^WXME01[0-9][0-9] ## " p)
@@ -48,7 +29,7 @@
                   (when (eq? prev #\\)
                     (loop))
                   (lloop c))))))
-      (values p filename new-at-table))))
+      (values p filename))))
 
 (define (eval/annotations initial-module annotate-module? annotator insert-tables at-tables templates)
   (define ns (make-base-namespace))
@@ -68,10 +49,22 @@
        [current-namespace ns])
     (eval #`(require #,initial-module))))
 
+(define (process-at-table stx at-table)
+  (define new-at-table
+    (map (lambda (entry)
+           (let ([positions (search-pos stx (at-insert-target entry) (at-insert-before entry) (at-insert-after entry))])
+             (when (null? positions)
+               (raise-syntax-error #f "unmatched-medic-expression" (at-insert-at-expr entry)))
+             (finer-at-insert (at-insert-scope entry) (at-insert-target entry) positions (at-insert-loc entry) (at-insert-exprs entry))))
+         at-table))
+  ; filter out empty posns in finer-at-insert structure
+  (set! new-at-table (filter (lambda (a) (not (null? (finer-at-insert-posns a)))) new-at-table))
+  new-at-table)
+
 ; fn: complete-path-string
 (define (load-module/annotate annotator fn m insert-table at-table template)
   (let-values ([(base _ __) (split-path fn)]
-               [(in-port src new-at-table) (build-input-port fn at-table)])
+               [(in-port src) (build-input-port fn)])
     (dynamic-wind
      (lambda () (void))
      
@@ -82,16 +75,18 @@
          (with-module-reading-parameterization
           (lambda ()
             (let* ([stx (parameterize ([current-namespace (make-base-namespace)])
-                            (read-syntax src in-port))]
-                   [inserted (expand (insert-stx (check-module-form (expand stx) m fn) insert-table new-at-table))]
-                   [module-ized-exp (annotator (check-module-form inserted m fn) template)]
-                   [second (read in-port)])
-              (printf "orig-stx=~v, source=~v\n" stx (syntax-source stx))
-              (unless (eof-object? second)
-                (raise-syntax-error
-                 'load-module/annotate
-                 (format "expected only a `module' declaration for `~s', but found an extra expression" m)
-                 second))
-              (eval-syntax module-ized-exp))))))
+                          (read-syntax src in-port))]
+                   [new-at-table (process-at-table stx at-table)])
+              (let* ([inserted (expand (insert-stx (check-module-form (expand stx) m fn) insert-table new-at-table))]
+                     [module-ized-exp (annotator (check-module-form inserted m fn) template)]
+                     [second (read in-port)])
+                ;(printf "new-at-table
+                ;(printf "orig-stx=~v, source=~v\n" stx (syntax-source stx))
+                (unless (eof-object? second)
+                  (raise-syntax-error
+                   'load-module/annotate
+                   (format "expected only a `module' declaration for `~s', but found an extra expression" m)
+                   second))
+                (eval-syntax module-ized-exp)))))))
      
      (lambda () (close-input-port in-port)))))

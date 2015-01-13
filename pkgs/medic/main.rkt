@@ -189,30 +189,27 @@
   (define (interpret-at-expr stx fn scope)
     (syntax-case stx (at)
       [[(at location-expr [#:before expr1 ...] [#:after expr2 ...]) border-expr ...]
-       (let ([target-exp (syntax->datum #'location-expr)]
-             [before-exp (map syntax->datum (syntax->list #'(expr1 ...)))]
-             [after-exp (map syntax->datum (syntax->list #'(expr2 ...)))])
+       (let ([before-exp (syntax->list #'(expr1 ...))]
+             [after-exp (syntax->list #'(expr2 ...))])
          (for-each (lambda (e) 
-                     (interpret-border-expr e fn scope target-exp before-exp after-exp stx)) 
+                     (interpret-border-expr e fn scope #'location-expr before-exp after-exp stx)) 
                    (syntax->list #'(border-expr ...))))]
       
       [[(at location-expr [#:before expr ...]) border-expr ...]
-       (let ([target-exp (syntax->datum #'location-expr)]
-             [before-exp (map syntax->datum (syntax->list #'(expr ...)))])
+       (let ([before-exp (syntax->list #'(expr ...))])
          (for-each (lambda (e) 
-                     (interpret-border-expr e fn scope target-exp before-exp '() stx)) 
+                     (interpret-border-expr e fn scope #'location-expr before-exp '() stx)) 
                    (syntax->list #'(border-expr ...))))]
       
       [[(at location-expr [#:after expr ...]) border-expr ...]
-       (let ([target-exp (syntax->datum #'location-expr)]
-             [after-exp (map syntax->datum (syntax->list #'(expr ...)))])
+       (let ([after-exp (syntax->list #'(expr ...))])
          (for-each (lambda (e) 
-                     (interpret-border-expr e fn scope target-exp '() after-exp stx)) 
+                     (interpret-border-expr e fn scope #'location-expr '() after-exp stx)) 
                    (syntax->list #'(border-expr ...))))]
       
       [[(at location-expr) border-expr ...]
        (for-each (lambda (e) 
-                   (interpret-border-expr e fn scope (syntax->datum #'location-expr) '() '() stx)) 
+                   (interpret-border-expr e fn scope #'location-expr '() '() stx)) 
                  (syntax->list #'(border-expr ...)))]
       
       [else
