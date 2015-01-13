@@ -367,7 +367,12 @@
       (for-each
        (lambda (entry)
          (raise-syntax-error #f "unmatched-medic-expression" (finer-at-insert-at-expr entry)))
-       at-table)))
+       at-table)
+      (hash-remove! insert-table 'each-function)
+      (for-each 
+       (lambda (i)
+         (raise-syntax-error #f "unmatched-medic-expression" (insert-struct-stx (car i))))
+       (hash-values insert-table))))
   
   (define (disarm stx) (syntax-disarm stx code-insp))
   (define (rearm old new) (syntax-rearm new old))

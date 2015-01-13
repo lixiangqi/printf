@@ -164,18 +164,18 @@
       [[(f ...) to-insert ...]
        (let ([funs (map (lambda (f) (format "~a" (syntax->datum f))) (syntax->list #'(f ...)))])
          (for-each (lambda (e) 
-                     (interpret-insert-expr e fn funs))
+                     (interpret-insert-expr e fn funs stx))
                    (syntax->list #'(to-insert ...))))]
       [else
-       (interpret-insert-expr stx fn (list 'module))]))
+       (interpret-insert-expr stx fn (list 'module) stx)]))
   
   ; interpret-insert-expr: syntax string (list-of symbol) -> void
-  (define (interpret-insert-expr stx fn scope-ids)
+  (define (interpret-insert-expr stx fn scope-ids [orig-stx #f])
     (define (insert-expr loc inserts)
       (let ([table (hash-ref insert-table fn)])
         (for-each (lambda (i)
                         (let ([exist (hash-ref table i '())])
-                          (hash-set! table i (cons (insert-struct loc inserts) exist))))
+                          (hash-set! table i (cons (insert-struct orig-stx loc inserts) exist))))
                    scope-ids)))
     
     (syntax-case stx (on-entry on-exit)

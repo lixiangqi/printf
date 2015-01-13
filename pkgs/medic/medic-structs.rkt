@@ -25,4 +25,4 @@
 
 (struct import-struct (layer-id exported) #:transparent)
 
-(struct insert-struct (loc exprs) #:transparent)
+(struct insert-struct (stx loc exprs) #:transparent)
