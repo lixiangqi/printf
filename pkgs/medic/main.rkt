@@ -128,6 +128,9 @@
   
   ; interpret-match-expr: syntax string-of-file-name -> void
   (define (interpret-match-expr stx fn)
+    (define (find-at-component s r)
+      (
+    
     (syntax-case stx (ref at with-behavior each-function each-expression)
       [(ref debug-id)
        (let* ([id (syntax->datum #'debug-id)]
@@ -146,13 +149,15 @@
                      (for-each (lambda (e) (interpret-match-expr e fn)) (syntax->list found-expr)))
                   (iterate (cdr lst))))]))]
       
-      [(with-behavior f s)
-       (let* ([fun (syntax->datum #'f)]
+      [(with-behavior f @ t)
+       (printf "ttttt : ~v" (syntax->list #'t))
+       #;(let* ([fun (syntax->datum #'f)]
               [str (format "~a" (syntax->datum #'s))]
               [at-args (remove-duplicates (regexp-match* #px"@,\\w+" str))]
               [at-ret (remove-duplicates (regexp-match* #px"@\\w+" str))]
               [ret (if (null? at-ret) #f (car at-ret))]
               [table (hash-ref template fn)])
+         
          (hash-set! table fun (list str at-args ret)))]
       
       [[each-function to-insert ...]

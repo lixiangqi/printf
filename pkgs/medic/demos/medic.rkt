@@ -16,30 +16,7 @@
 
 (layer layer1
        (in #:module "src.rkt"
-           #;[(at (inc-counter) [#:before (define x (inc 4))] [#:after (+ x 1)])
-            [on-entry (printf "entering inc-counter\n")]]
-           #;[(f) 
-            [(at (inc-counter) [#:before (define x (inc 4))] [#:after (+ x 1)])
-            [on-entry (printf "entering inc-counter\n")]]]
-           [each-function [on-entry (log "~a" 'entered 'extra)
-                                    
-                                    ]]))
-
-
-;(search-pos s #'(inc-counter) (list #'(define x (inc 4))) null)
-;
-;(search-pos s #'(inc-counter) (list #'(define x (inc 4))) (list #'(+ x 1)))
-;
-;(search-pos s #'(inc-counter) (list #'(define x (inc 4))) (list #'(+ x 2)))
-;
-;(search-pos s #'(inc-counter) (list #'(define x (inc 4))) (list #'(+ x 1) #'(+ y 3)))
-;
-;(search-pos s #'(inc-counter2) (list #'(define x (inc 4))) (list #'(+ x 1)))
-;
-;(search-pos s #'(inc-counter) null null)
-;
-;(search-pos s #'(inc-counter) (list #'(define x 3)) null)
-;
-;(search-pos s #'(inc-counter) (list #'(define x (inc 4)) #'(+ x 1)) null)
-;
-;(search-pos s #'(inc-counter) null (list #'(+ x 1)))
+           (with-behavior f 
+                          @{f: sum of @x and @(+ 2 (+ y 1)) is @ret})
+           [on-exit (log (f 3 4))
+                    (log (f 4 5))]))
