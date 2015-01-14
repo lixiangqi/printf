@@ -128,10 +128,17 @@
   
   ; interpret-match-expr: syntax string-of-file-name -> void
   (define (interpret-match-expr stx fn)
-    (define (find-at-component s r)
-      (
     
-    (syntax-case stx (ref at with-behavior each-function each-expression)
+    (define (add-template f t r)
+      (let* ([fun (syntax->datum f)]
+             [ts (format "~a" (syntax->datum t))]
+             [str (substring ts 1 (sub1 (string-length ts)))]
+             [at-exprs (remove-duplicates (regexp-match* #px"@\\s\\(.+\\)" str))]
+             [at-vars (remove-duplicates (regexp-match* #px"@\\w+" str))]
+             [table (hash-ref template fn)])
+        (hash-set! table fun (list str (cons at-exprs at-vars) r))))
+      
+    (syntax-case stx (ref at with-behavior each-function renamed ret)
       [(ref debug-id)
        (let* ([id (syntax->datum #'debug-id)]
               [expr (hash-ref debug-table id #f)])
@@ -150,15 +157,10 @@
                   (iterate (cdr lst))))]))]
       
       [(with-behavior f @ t)
-       (printf "ttttt : ~v" (syntax->list #'t))
-       #;(let* ([fun (syntax->datum #'f)]
-              [str (format "~a" (syntax->datum #'s))]
-              [at-args (remove-duplicates (regexp-match* #px"@,\\w+" str))]
-              [at-ret (remove-duplicates (regexp-match* #px"@\\w+" str))]
-              [ret (if (null? at-ret) #f (car at-ret))]
-              [table (hash-ref template fn)])
-         
-         (hash-set! table fun (list str at-args ret)))]
+       (add-template #'f #'t #f)]
+      
+      [(with-behavior f @ t (renamed ret r))
+       (add-template #'f #'t (format "~a" (syntax->datum #'r)))]
       
       [[each-function to-insert ...]
        (for-each (lambda (e) (interpret-insert-expr e fn (list 'each-function))) (syntax->list #'(to-insert ...)))]

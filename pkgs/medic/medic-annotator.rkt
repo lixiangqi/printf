@@ -42,7 +42,8 @@
                                      #,(rearm
                                         #'mb
                                         #`(plain-module-begin
-                                           (#%require racket/base)
+                                           (#%require racket/base
+                                                      mzlib/string)
                                            (define old (current-inspector))
                                            (current-inspector (make-inspector old))
                                            #,@(map (lambda (e) (module-level-expr-iterator e))
@@ -109,14 +110,6 @@
                    #,@new-bodies)))]))
      
       (define (log-expression-annotator e label layer-id)
-        (define (lookup-var args vals var)
-          (let loop ([i 0])
-            (if (< i (length args))
-                (if (equal? (list-ref args i) var)
-                    (list-ref vals i)
-                    (loop (add1 i)))
-                (error 'unbound-var-in-log-behavior-statement))))
-        
         (define (substitute-val str from to)
           (if (null? from)
               str
@@ -140,18 +133,31 @@
              (cond
                [(identifier? fun)
                 (if v
-                    (let ([template-str (car v)]
-                          [template-at-args (cadr v)]
-                          [template-ret (caddr v)])
+                    (let* ([template-str (car v)]
+                           [template-at-exprs (car (cadr v))]
+                           [template-at-vars (cdr (cadr v))]
+                           [ret (caddr v)]
+                           [template-ret (if ret ret "ret")])
                       (quasisyntax/loc e
                         (let* ([arg-values (list #,@args)]
                                [ret-value (format "~v" (apply #,fun arg-values))]
-                               [replaces (map (lambda (a)
-                                                (format "~v" (#,lookup-var (list #,@fun-args) arg-values (string-trim a "@,"))))
-                                              (list #,@template-at-args))]
-                               [str (#,substitute-val #,template-str (list #,@template-at-args) replaces)]
-                               [final-str (if #,template-ret (#,string-replace str #,template-ret ret-value) str)])
-                          (#,add-log final-str '#,layer-id #t))))
+                               [at-expr-vals null]
+                               [at-var-vals null]
+                               [str #,template-str])
+                          (parameterize ([current-namespace (make-base-namespace)])
+                            (for-each (lambda (a v)
+                                        (namespace-set-variable-value! (string->symbol a) v))
+                                      (list #,@fun-args) arg-values)
+                            (namespace-set-variable-value! (string->symbol #,template-ret) ret-value)
+                            (set! at-expr-vals (map (lambda (e)
+                                                      (format "~a" (eval-string (string-trim e "@ "))))
+                                                    (list #,@template-at-exprs)))
+                            (set! at-var-vals (map (lambda (v)
+                                                     (format "~a" (eval-string (string-trim v "@"))))
+                                                   (list #,@template-at-vars))))
+                          (set! str (#,substitute-val str (list #,@template-at-exprs) at-expr-vals))
+                          (set! str (#,substitute-val str (list #,@template-at-vars) at-var-vals))
+                          (#,add-log str '#,layer-id #t))))
                     (quasisyntax/loc e (#,add-log (format "~a = ~v" #,label app) '#,layer-id #f)))]
                [else
                 (error 'log-expression-annotator "unknown expr: ~a"

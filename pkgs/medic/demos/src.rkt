@@ -11,3 +11,6 @@
 
 (define (f x y)
   (+ (sqr x) (sqr y)))
+
+(define (g x ret)
+  (+ (sqr x) (sqr ret)))

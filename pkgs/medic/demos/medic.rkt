@@ -17,6 +17,8 @@
 (layer layer1
        (in #:module "src.rkt"
            (with-behavior f 
-                          @{f: sum of @x and @(+ 2 (+ y 1)) is @ret})
+                          @{f: sum of @x and @(+ 2 (+ y 1)) try @ is @ret})
+           (with-behavior g 
+                          @{g: sum of @x and @(+ x (+ ret 1)) try @ is @ret2} (renamed ret ret2))
            [on-exit (log (f 3 4))
-                    (log (f 4 5))]))
+                    (log (g 4 5))]))
