@@ -53,7 +53,6 @@ Here is the grammar for the Medic metaprogramming language:
   [source-expr (ref debug-src-id)
                target-language-expression]
   [flag boolean]
-  [template string]
   [part-of-target-language-expression string]
   [f variable-not-otherwise-mentioned]
   [id variable-not-otherwise-mentioned]
