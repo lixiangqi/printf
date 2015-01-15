@@ -1,16 +1,18 @@
 #lang racket
 
-;(define test%
-;  (class object%
-;    (define a 1)
-;    (define (get-a) (+ 1 a))))
+(define test%
+  (class object%
+    (define a 1)
+    (define (get-a) (+ 1 a))))
 
-;(define (f x)
-;  (/ x 1))
-;(f 1)
+(define hi%
+  (class object%
+    (define a 1)
+    (define b 2)
+    (define (get-b) (+ 2 b))
+    (define (get-a) (+ 1 a))))
 
-(define (f x y)
-  (+ (sqr x) (sqr y)))
 
-(define (g x ret)
-  (+ (sqr x) (sqr ret)))
+;(let ([a (lambda (x) (+ 1 x))]
+;      [b (+ 2 4)])
+;  (+ (a 3) b))

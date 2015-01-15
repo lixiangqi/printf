@@ -59,7 +59,6 @@
          at-table))
   ; filter out empty posns in finer-at-insert structure
   (set! new-at-table (filter (lambda (a) (not (null? (finer-at-insert-posns a)))) new-at-table))
-  (printf "new-at-table = ~v\n" new-at-table)
   new-at-table)
 
 ; fn: complete-path-string
@@ -81,7 +80,6 @@
               (let* ([inserted (expand (insert-stx (check-module-form (expand stx) m fn) insert-table new-at-table))]
                      [module-ized-exp (annotator (check-module-form inserted m fn) template)]
                      [second (read in-port)])
-                ;(printf "orig-stx=~v, source=~v\n" stx (syntax-source stx))
                 (unless (eof-object? second)
                   (raise-syntax-error
                    'load-module/annotate
