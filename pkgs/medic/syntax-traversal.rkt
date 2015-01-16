@@ -50,7 +50,7 @@
          [(target)
           (cond
             [(match? first-s expr) 
-             (traverse (cdr s) 'after expr before-exprs after-exprs #f pos)]
+             (traverse (cdr s) 'after expr before-exprs after-exprs 'target pos)]
             [else
              (traverse (car s) 'target expr before-exprs after-exprs #f p)
              (traverse (cdr s) 'target expr before-exprs after-exprs #f p)])]
@@ -65,7 +65,7 @@
                    (traverse (car s) 'after expr before-exprs after-exprs r p)
                    (traverse (cdr s) 'after expr before-exprs after-exprs r p)))])]))]
     [(empty? s)
-     (when (and (equal? r 'after) (null? after-exprs))
+     (when (and (or (equal? r 'after) (equal? r 'target)) (null? after-exprs))
        (set! res-pos (cons p res-pos)))]))
 
 (define (search-pos s e before after)

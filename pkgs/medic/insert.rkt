@@ -290,7 +290,7 @@
                  [all-bound-vars (append new-bound-vars bound-vars)]
                  [bindings (append all-bound-vars top-level-ids)]
                  [body-list (syntax->list #'bodies)]
-                 [within-class? (regexp-match "%$" id)])
+                 [within-class? (and id (regexp-match "%$" id))])
             (define-values (entry-exprs exit-exprs)
               (if within-class?
                 (get-lambda-exit-entry-inserts let-id id)
