@@ -129,21 +129,15 @@
                 to-remove-entries)
       ret)
     
-    (define (match-border-insert scope loc [c #f]) 
+    (define (match-border-insert scope loc) 
       (define inserts (hash-ref insert-table scope '()))
       (define result-stx '())
       (unless (null? inserts)
         (for-each (lambda (entry)
-                    (let ([class-ids (insert-struct-class-scope entry)])
-                      (when (or (and (not c)
-                                     (not class-ids)
-                                     (equal? (insert-struct-loc entry) loc))
-                                (and c
-                                     (and class-ids (member c class-ids))
-                                     (equal? (insert-struct-loc entry) loc)))
-                        (if (equal? loc 'entry)
-                            (set! result-stx (append (map convert-stx (insert-struct-exprs entry)) result-stx))
-                            (set! result-stx (append result-stx (map convert-stx (insert-struct-exprs entry))))))))
+                    (when (equal? (insert-struct-loc entry) loc)
+                      (if (equal? loc 'entry)
+                          (set! result-stx (append (map convert-stx (insert-struct-exprs entry)) result-stx))
+                          (set! result-stx (append result-stx (map convert-stx (insert-struct-exprs entry)))))))
                   inserts))
       result-stx)
     
@@ -226,19 +220,18 @@
       (or ret new-stx))
     
     
-    (define (expression-iterator expr bound-vars [id #f] [let-id #f])
-      ;(printf "[here] iterator expr=~v, let-id=~v\n" expr let-id)
-      (define (get-lambda-exit-entry-inserts id c)
+    (define (expression-iterator expr bound-vars [id #f])
+      (define (get-lambda-exit-entry-inserts id)
         (define entry-exprs (list #'(void)))
         (define exit-exprs '())
         (when id
-          (let ([entry-res (match-border-insert id 'entry c)])
+          (let ([entry-res (match-border-insert id 'entry)])
             (set! entry-exprs (if (null? entry-res) (list #'(void)) entry-res))
-            (set! exit-exprs (match-border-insert id 'exit c))
+            (set! exit-exprs (match-border-insert id 'exit))
             (hash-remove! insert-table id)
             (when (hash-has-key? insert-table 'each-function)
-              (set! entry-exprs (append (match-border-insert 'each-function 'entry c) entry-exprs))
-              (set! exit-exprs (append (match-border-insert 'each-function 'exit c) exit-exprs)))))
+              (set! entry-exprs (append (match-border-insert 'each-function 'entry) entry-exprs))
+              (set! exit-exprs (append (match-border-insert 'each-function 'exit) exit-exprs)))))
         (values entry-exprs exit-exprs))
       
       (define (let/rec-values-annotator letrec?)
@@ -249,23 +242,20 @@
                                       (map syntax->list
                                            (syntax->list #`((var ...) ...))))]
                  [all-bindings (append new-bindings bound-vars)]
-                 [new-rhs (map (lambda (expr v)
-                                 ;(printf "[let]: v=~v, expr=~v\n" v expr)
+                 [new-rhs (map (lambda (expr)
                                  (expression-iterator expr
                                                       (if letrec? all-bindings bound-vars)
-                                                      id 
-                                                      (format "~a" (syntax->datum (car (syntax->list v))))))
-                               (syntax->list #'(rhs ...))
-                               (syntax->list #'((var ...) ...)))]
+                                                      id))
+                               (syntax->list #'(rhs ...)))]
                  [last-body (car (reverse (syntax->list #'bodies)))]
                  [all-but-last-body (reverse (cdr (reverse (syntax->list #'bodies))))]
                  [bodies (append (map (lambda (expr)
-                                        (expression-iterator expr all-bindings id let-id))
+                                        (expression-iterator expr all-bindings id))
                                       all-but-last-body)
                                  (list (expression-iterator
                                         last-body
                                         all-bindings
-                                        id let-id)))])
+                                        id)))])
             (define final-body 
               (if (equal? let-exit 'no-exit-exprs)
                   (with-syntax ([(new-rhs/trans ...) new-rhs])
@@ -289,19 +279,13 @@
           (let* ([new-bound-vars (arglist-bindings #'arg-list)]
                  [all-bound-vars (append new-bound-vars bound-vars)]
                  [bindings (append all-bound-vars top-level-ids)]
-                 [body-list (syntax->list #'bodies)]
-                 [within-class? (and id (regexp-match "%$" id))])
-            (define-values (entry-exprs exit-exprs)
-              (if within-class?
-                (get-lambda-exit-entry-inserts let-id id)
-                (get-lambda-exit-entry-inserts let-id #f)))
-            (printf "\nid=~v, let-id=~v,entry=~v, exit=~v, bound-vars=~v\n" id let-id entry-exprs exit-exprs bound-vars)
+                 [body-list (syntax->list #'bodies)])
+            (define-values (entry-exprs exit-exprs) (get-lambda-exit-entry-inserts id))
             (set! let-exit 'no-exit-exprs)
             (set! internal-let? #f)
-            
             (when (and (= (length body-list) 1) (not (null? exit-exprs)))
               (set! let-exit exit-exprs))
-            (define new-bodies (map (lambda (e) (expression-iterator e all-bound-vars id let-id)) body-list))
+            (define new-bodies (map (lambda (e) (expression-iterator e all-bound-vars id)) body-list))
             (define with-entry-body (quasisyntax/loc clause
                                       (arg-list
                                        #,@(map (lambda (e) (wrap-context e bindings id))
@@ -337,15 +321,15 @@
              (case-lambda #,@(map lambda-clause-annotator (syntax->list #'clauses))))]
           
           [(if test then else)
-           (quasisyntax/loc expr (if #,(expression-iterator #'test bound-vars id let-id)
-                                     #,(expression-iterator #'then bound-vars id let-id)
-                                     #,(expression-iterator #'else bound-vars id let-id)))]
+           (quasisyntax/loc expr (if #,(expression-iterator #'test bound-vars id)
+                                     #,(expression-iterator #'then bound-vars id)
+                                     #,(expression-iterator #'else bound-vars id)))]
           
           [(begin . bodies)
-           (quasisyntax/loc expr (begin #,@(map (lambda (e) (expression-iterator e bound-vars id let-id)) (syntax->list #'bodies))))]
+           (quasisyntax/loc expr (begin #,@(map (lambda (e) (expression-iterator e bound-vars id)) (syntax->list #'bodies))))]
           
           [(begin0 . bodies)
-           (quasisyntax/loc expr (begin0 #,@(map (lambda (e) (expression-iterator e bound-vars id let-id)) (syntax->list #'bodies))))]
+           (quasisyntax/loc expr (begin0 #,@(map (lambda (e) (expression-iterator e bound-vars id)) (syntax->list #'bodies))))]
           
           [(let-values . clause)
            (let/rec-values-annotator #f)]
@@ -354,7 +338,7 @@
            (let/rec-values-annotator #t)]
           
           [(set! var val)
-           (quasisyntax/loc expr (set! var #,(expression-iterator #`val bound-vars id let-id)))]
+           (quasisyntax/loc expr (set! var #,(expression-iterator #`val bound-vars id)))]
           
           [(quote _) expr]
           
@@ -362,11 +346,11 @@
           
           [(with-continuation-mark key mark body)
            (quasisyntax/loc expr (with-continuation-mark key
-                                   #,(expression-iterator #'mark bound-vars id let-id)
-                                   #,(expression-iterator #'body bound-vars id let-id)))]
+                                   #,(expression-iterator #'mark bound-vars id)
+                                   #,(expression-iterator #'body bound-vars id)))]
           
           [(#%plain-app . exprs)
-           (let ([subexprs (map (lambda (e) (expression-iterator e bound-vars id let-id)) (syntax->list #'exprs))])
+           (let ([subexprs (map (lambda (e) (expression-iterator e bound-vars id)) (syntax->list #'exprs))])
              (quasisyntax/loc expr (#%plain-app . #,subexprs)))]
           
           [(#%top . var) expr]
@@ -378,12 +362,12 @@
       (or ret new-stx))
     (begin0
       (top-level-insert stx)
-      #;(for-each
+      (for-each
        (lambda (entry)
          (raise-syntax-error #f "unmatched-medic-expression" (finer-at-insert-at-expr entry)))
        at-table)
       ;(hash-remove! insert-table 'each-function)
-      #;(for-each 
+      (for-each 
        (lambda (i)
          (raise-syntax-error #f "unmatched-medic-expression" (insert-struct-stx (car i))))
        (hash-values insert-table))))

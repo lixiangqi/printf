@@ -31,13 +31,11 @@ Here is the grammar for the Medic metaprogramming language:
   [debug-expr (def debug-src-id #:src source-expr source-expr ...)
               (def debug-id #:debug match-expr match-expr ...)
               (in #:module module-path match-expr match-expr ...)]
-  [match-expr clause
-              [(c c ...) clause clause ...]]
-  [clause (with-behavior f template)
-          (ref debug-id)
-          insert-expr
-          [each-function insert-expr insert-expr ...]
-          [(f f ...) insert-expr insert-expr ...]]
+  [match-expr (with-behavior f template)
+              (ref debug-id)
+              insert-expr
+              [each-function insert-expr insert-expr ...]
+              [(f f ...) insert-expr insert-expr ...]]
   [insert-expr border-expr
                at-expr]
   [border-expr [on-entry source-expr source-expr ...]
