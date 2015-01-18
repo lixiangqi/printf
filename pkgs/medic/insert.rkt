@@ -41,9 +41,6 @@
       [else stx]))
   
   (define (insert-stx stx insert-table at-table)
-    (printf "insert-table=~v\n" insert-table)
-    (printf "at-table=~v\n" at-table)
-    (printf "insert-stx: stx=~v\n" stx)
     (define top-level-ids '())
     (define let-exit '())
     (define internal-let? #f)
