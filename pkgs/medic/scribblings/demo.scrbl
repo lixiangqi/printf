@@ -62,19 +62,19 @@ Basic module-level and function-level insertion of some debugging code.
            [on-entry (define x 1)
                      (define y 2)]
            [on-exit 
-            (log "module exit:")
+            (log "module exit: expect y = 2")
             (log y)]
            ; module-level at-expr
-           [(at (define n 9)) [on-exit (log "module at:")
+           [(at (define n 9)) [on-exit (log "module at: expect n = 9")
                                        (log n)]]
            ; function-level at-expr and border-expr
            [(f) 
-            [(at (with-start "(* x (sub1")) [on-entry (log "else branch:") (log n)]]
+            [(at (* x (sub1 _))) [on-entry (log "else branch: expect n = 4") (log n)]]
             [on-entry (define y 30)
-                      (log "function entry:")
+                      (log "function entry: expect y = 30")
                       (log x)
                       (log y)]
-            [on-exit (log "function exit:")
+            [on-exit (log "function exit: expect n = 4")
                      (log n)]])) 
 }
 @section{Demo 2: @tt{at-expr}}

@@ -44,6 +44,7 @@
     (define top-level-ids '())
     (define let-exit '())
     (define internal-let? #f)
+    (define later-removes '())
     (define (add-top-level-id var)
       (set! top-level-ids (append (list var) top-level-ids)))
     
@@ -81,7 +82,7 @@
       (define after-ids (if local? (append bounds top-level-ids) after-bounds))
       (define to-remove-entries '())
       (define pos (syntax-position old-stx))
-      (when pos 
+      (when pos
         (let iterate ([lst at-table]
                       [result-stx new-stx])
           (if (null? lst)
@@ -101,7 +102,9 @@
                         [(or (not local?) (equal? (length scope) 1))
                          (if (equal? (length at-posns) 1)
                              (set! to-remove-entries (cons entry to-remove-entries))
-                             (set-finer-at-insert-posns! entry (remove pos at-posns)))]
+                             (begin
+                               (set! later-removes (cons entry later-removes))
+                               (set-finer-at-insert-posns! entry (remove pos at-posns))))]
                         [(and local? (not (equal? (length scope) 1)))
                          (set-finer-at-insert-posns! entry (remove pos at-posns))
                          (set-finer-at-insert-scope! entry (remove id scope))])
@@ -364,6 +367,9 @@
                          ((error-display-handler) 
                           (exn-message e)
                           e))])
+        (for-each (lambda (e)
+                    (set! at-table (remove e at-table)))
+                  later-removes)
         (for-each
          (lambda (entry)
            (raise-syntax-error #f "unmatched-medic-expression" (finer-at-insert-at-expr entry)))

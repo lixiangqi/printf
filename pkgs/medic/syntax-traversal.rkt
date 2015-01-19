@@ -49,7 +49,7 @@
                     (traverse (cdr s) 'before expr before-exprs after-exprs r p))))]
          [(target)
           (cond
-            [(match? first-s expr) 
+            [(match? first-s expr)
              (traverse (cdr s) 'after expr before-exprs after-exprs 'target pos)]
             [else
              (traverse (car s) 'target expr before-exprs after-exprs #f p)
