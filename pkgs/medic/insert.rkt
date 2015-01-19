@@ -257,7 +257,7 @@
                                         all-bindings
                                         id)))])
             (define final-body 
-              (if (equal? let-exit 'no-exit-exprs)
+              (if (or (equal? let-exit 'no-exit-exprs) (not id) (and id (regexp-match "%$" id)))
                   (with-syntax ([(new-rhs/trans ...) new-rhs])
                     (quasisyntax/loc expr
                       (label (((var ...) new-rhs/trans) ...)
@@ -280,29 +280,37 @@
                  [all-bound-vars (append new-bound-vars bound-vars)]
                  [bindings (append all-bound-vars top-level-ids)]
                  [body-list (syntax->list #'bodies)])
-            (define-values (entry-exprs exit-exprs) (get-lambda-exit-entry-inserts id))
-            (set! let-exit 'no-exit-exprs)
-            (set! internal-let? #f)
-            (when (and (= (length body-list) 1) (not (null? exit-exprs)))
-              (set! let-exit exit-exprs))
-            (define new-bodies (map (lambda (e) (expression-iterator e all-bound-vars id)) body-list))
-            (define with-entry-body (quasisyntax/loc clause
-                                      (arg-list
-                                       #,@(map (lambda (e) (wrap-context e bindings id))
-                                               entry-exprs)
-                                       #,@new-bodies)))
-            (define with-exit-body (quasisyntax/loc clause
-                                     (arg-list
-                                      #,@(map (lambda (e) (wrap-context e bindings id))
-                                              entry-exprs)
-                                      #,@new-bodies
-                                      #,@(map (lambda (e) (wrap-context e bindings id))
-                                              exit-exprs))))
-            (if (null? exit-exprs)
-                with-entry-body
-                (if internal-let?
-                    with-entry-body
-                    with-exit-body)))]))
+            (cond
+              [(or (not id)
+                   (and id (regexp-match "%$" id)))
+               (define new-bodies (map (lambda (e) (expression-iterator e all-bound-vars id)) body-list))
+               (quasisyntax/loc clause
+                 (arg-list
+                  #,@new-bodies))]
+              [else
+               (define-values (entry-exprs exit-exprs) (get-lambda-exit-entry-inserts id))
+               (set! let-exit 'no-exit-exprs)
+               (set! internal-let? #f)
+               (when (and (= (length body-list) 1) (not (null? exit-exprs)))
+                 (set! let-exit exit-exprs))
+               (define new-bodies (map (lambda (e) (expression-iterator e all-bound-vars id)) body-list))
+               (define with-entry-body (quasisyntax/loc clause
+                                         (arg-list
+                                          #,@(map (lambda (e) (wrap-context e bindings id))
+                                                  entry-exprs)
+                                          #,@new-bodies)))
+               (define with-exit-body (quasisyntax/loc clause
+                                        (arg-list
+                                         #,@(map (lambda (e) (wrap-context e bindings id))
+                                                 entry-exprs)
+                                         #,@new-bodies
+                                         #,@(map (lambda (e) (wrap-context e bindings id))
+                                                 exit-exprs))))
+               (if (null? exit-exprs)
+                   with-entry-body
+                   (if internal-let?
+                       with-entry-body
+                       with-exit-body))]))]))
       
       (define new-stx
         (rearm

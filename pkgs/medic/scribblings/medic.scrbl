@@ -11,7 +11,7 @@
 @author["Xiangqi Li"]
 
 The Medic debugger is a debugging tool that incorporates a metaprogramming language to describe the
-task of debugging and a full featured tracing library to enhance the traditional debugging
+task of debugging and a full-featured tracing library to enhance the traditional debugging
 technique of inserting print-like expressions into the source program. 
 @local-table-of-contents[]
 

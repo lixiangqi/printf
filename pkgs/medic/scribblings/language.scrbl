@@ -5,7 +5,8 @@
           scriblib/figure
           (for-label (except-in racket log export import remove)
                      racket/contract/base
-                     medic/trace))
+                     medic/trace
+                     ))
 
 @title{A Metaprogramming Language}
 @defmodulelang[medic]
@@ -21,7 +22,7 @@ Here is the grammar for the Medic metaprogramming language:
 
 @(racketgrammar* 
   #:literals (layer export import def in with-behavior ref each-function
-              on-entry on-exit at with-start)
+              on-entry on-exit at)
   [top-level-form (layer-form layer-form ...)]        
   [layer-form (layer layer-id layer-expr ...)
               (layer layer-id #:enable flag layer-expr ...)]
