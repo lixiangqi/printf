@@ -49,14 +49,12 @@ Here is the grammar for the Medic metaprogramming language:
            [(at location-expr after-expr) border-expr border-expr ...]
            [(at location-expr before-expr after-expr) border-expr border-expr ...]]
   [location-expr target-language-expression
-                 at-pattern-expr]
-  [at-pattern-expr (with-start part-of-target-language-expression)]
+                 expression-pattern]
   [before-expr [#:before location-expr location-expr ...]]
   [after-expr [#:after location-expr location-expr ...]]
   [source-expr (ref debug-src-id)
                target-language-expression]
   [flag boolean]
-  [part-of-target-language-expression string]
   [f variable-not-otherwise-mentioned]
   [id variable-not-otherwise-mentioned]
   [layer-id variable-not-otherwise-mentioned]
@@ -139,47 +137,17 @@ function or the @racket[(let ....)] local binding form.  To avoid the confusions
 @racketvarfont{location-expr} in the target program, specification of @racketvarfont{before-expr} 
 and @racketvarfont{after-expr} can be employed to confine the lexical context of @racketvarfont{location-expr}.
 Expressions within @racketvarfont{location-expr}, @racketvarfont{before-expr} and @racketvarfont{after-expr} can be a legal
-source expression or an expression structure with @litchar["_"] wildcard character matching any legal expression. For 
+source expression or an expression pattern with @litchar["_"] wildcard character matching any legal expression. For 
 example,
 
 @codeblock{
-(at (
-
+[(at (+ _ 1) [#:before (define x (inc 4))]) [on-entry (log x)]]
+}
 }
 
-@defform[[on-entry source-expr source-expr ...]]{}
-@defform[[on-exit source-expr source-expr ...]]{}
-
-There are some points about the language worth noting:
-
-@itemize[
-
-  @item{The core of the language's ability to describe how the source program should exhibit the desirable debugging
-        behaviors is contained in the @racketvarfont{match-expr}, which describes @emph{where} to focus and @emph{what} to do. 
-        
-        As the Medic language is intended to be @emph{language-independent} and to work with most popular programming
-        languages, a minimum set of scope categories is chosen: module scope and function scope. For 
-        example, for the above grammar, the third clause of the @racketvarfont{match-expr} non-terminal is within module scope, 
-        and the following three clauses are within function scope. Function scope can be function name exact matching or 
-        pattern matching. The form @tt{(@racketvarfont{f f} ...)} matches one or more function names enclosed in the parenthesis, and
-        @racketvarfont{fun-patten-expr} matches a pattern of function names starting with some common characters, which are components
-        of the string @racketvarfont{part-of-target-language-function-name} in @tt{(@racket[with-start] @racketvarfont{part-of-target-language-function-name})}.
-        The debugging primitive @racket[each-function] supports referring to every function defined in 
-        the module. 
-        @margin-note{When the target language is Racket, the @racketvarfont{location-expr} anchor expression in the 
-        form @tt{(@racket[at] @racketvarfont{location-expr} ...)} cannot be an internal definition, such as the @racket[(define ....)] form inside a 
-        function or the @racket[(let ....)] local binding form.}
-        With clear scope declared for debugging, exact location descriptions are supported by @racketvarfont{border-expr} and 
-        @racketvarfont{at-expr}. The goal of @racketvarfont{at-expr} is to facilitate accurately locating the target expression anywhere
-        in the source program. The @racketvarfont{location-expr} expression in the form @tt{(@racket[at] @racketvarfont{location-expr} ...)} can be a 
-        complete expression in the target program or a part of the expression represented by @racketvarfont{at-pattern-expr} when
-        the expression is complicated. To avoid the confusions of multiple matches of @racketvarfont{location-expr} in the target
-        program, specification of @racketvarfont{before-expr} and @racketvarfont{after-expr} can be employed to confine the lexical context 
-        of the target expression @racketvarfont{location-expr}. If @racketvarfont{border-expr} is within @racketvarfont{at-expr}, the debugging code 
-        @tt{@racketvarfont{source-expr source-expr} ...} is inserted before or after the source expression matched by @racketvarfont{at-expr};
-        otherwise, it is inserted at the beginning or the end of a function or module. When there are multiple @racketvarfont{match-expr}s
-        containing debugging code @racket[a], @racket[b], and @racket[c] to be inserted individually and all required to be added
-        before the same source expression @racket[d], the order of the final modified program will be @racket[c b a d]. Otherwise, when they are all after the expression @racket[d], the order will be @racket[d a b c].
-        
-        }
-]
+@defform[[on-entry source-expr source-expr ...]]{
+Inserts a sequence of debugging code @racket[source-expr] before the target expression located by @racketvarfont{at-expr},
+or at the beginning of a function or module depending on the scope of matching.}
+@defform[[on-exit source-expr source-expr ...]]{
+Inserts a sequence of debugging code @racket[source-expr] after the target expression located by @racketvarfont{at-expr},
+or at the end of a function or module depending on the scope of matching.}
