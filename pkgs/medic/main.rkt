@@ -6,7 +6,9 @@
 (provide (rename-out [module-begin #%module-begin])
          define log
          #%app #%top require #%datum
-         #%top-interaction)
+         #%top-interaction
+         layer export import def in with-behavior ref each-function
+         on-entry on-exit at)
 
 
 (module reader syntax/module-reader
@@ -329,3 +331,15 @@
   (list insert-table
         at-inserts
         template))
+
+(define layer #f)
+(define export #f)
+(define import #f)
+(define def #f)
+(define in #f)
+(define with-behavior #f)
+(define ref #f)
+(define each-function #f)
+(define on-entry #f)
+(define on-exit #f)
+(define at #f)

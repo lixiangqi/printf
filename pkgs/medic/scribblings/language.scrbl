@@ -3,16 +3,18 @@
 @(require scribble/manual
           redex/pict
           scriblib/figure
-          (for-label (except-in racket log export import remove)
+          (for-label (except-in racket log export import remove and)
                      racket/contract/base
                      medic/trace
-                     ))
+                     (only-in medic/main 
+                              layer export import def in with-behavior ref each-function
+                              on-entry on-exit at)))
 
 @title{A Metaprogramming Language}
 @defmodulelang[medic]
-The Medic debugger treats debugging as a metaprogramming activity where the programmer writes
-a debugging program about the source program to make invisible states of the source program visible.
-The separation of a debugging program from a source program enables reusing and programming
+The Medic debugger treats debugging as a metaprogramming activity. Programmers write a debugging
+program to augment the source program with desirable debugging behaviors without changing the source
+program. The separation of a debugging program from a source program enables reusing and programming
 of the debugging interaction as well as keeping the source program intact. The debugging program can 
 serve as a form of documentation, which preserves
 the efforts invested in debugging, and act as something akin to testing suites that run against
@@ -33,6 +35,7 @@ Here is the grammar for the Medic metaprogramming language:
               (def debug-id #:debug match-expr match-expr ...)
               (in #:module module-path match-expr match-expr ...)]
   [match-expr (with-behavior f template)
+              (with-behavior f template [renamed ret id])
               (ref debug-id)
               insert-expr
               [each-function insert-expr insert-expr ...]
@@ -42,9 +45,9 @@ Here is the grammar for the Medic metaprogramming language:
   [border-expr [on-entry source-expr source-expr ...]
                [on-exit source-expr source-expr ...]]
   [at-expr [(at location-expr) border-expr border-expr ...]
-              [(at location-expr before-expr) border-expr border-expr ...]
-              [(at location-expr after-expr) border-expr border-expr ...]
-              [(at location-expr before-expr after-expr) border-expr border-expr ...]]
+           [(at location-expr before-expr) border-expr border-expr ...]
+           [(at location-expr after-expr) border-expr border-expr ...]
+           [(at location-expr before-expr after-expr) border-expr border-expr ...]]
   [location-expr target-language-expression
                  at-pattern-expr]
   [at-pattern-expr (with-start part-of-target-language-expression)]
@@ -60,62 +63,97 @@ Here is the grammar for the Medic metaprogramming language:
   [debug-src-id variable-not-otherwise-mentioned]
   [debug-id variable-not-otherwise-mentioned])
 
+@defform*[((layer layer-id layer-expr ...)
+           (layer layer-id #:enable flag layer-expr ...))]{
+Modularizes debugging code and facilitates organizing debugging traces into different units. 
+The @racket[#:enable] keyword permits enabling and disabling adding to the source code
+the debugging behaviors described within @racketvarfont{layer-expr}, while the debugging definitions
+within the layer are still available to other layers.  
+}
+
+@defform[(export id id ...)]{
+Declares exports of a layer where the @racketvarfont{id} is the identifier of an internal
+layer definition.}
+
+@defform[(import layer-id layer-id ...)]{
+Declares imports of a layer where the @racketvarfont{layer-id} is some layer identifier.}
+
+@defform*[((def debug-src-id #:src source-expr source-expr ...)
+           (def debug-id #:debug match-expr match-expr ...))]{
+Binds @racketvarfont{debug-src-id} to a sequence of source expressions following the
+@racket[#:src] keyword and @racketvarfont{debug-id} to a sequence of medic expressions
+following the @racket[#:debug] keyword.}
+
+@defform*[((ref debug-src-id)
+           (ref debug-id))]{
+Accesses the corresponding source expressions or medic expressions bound by 
+@racketvarfont{debug-src-id} or @racketvarfont{debug-id}.
+}
+
+@defform[(in #:module module-path match-expr match-expr ...)]{
+Specifies the module to apply debugging code. The @racketvarfont{module-path} 
+can be three kinds of paths: a relative path, an absolute path, or a library path. 
+For example, the following are possible specifications for @racketvarfont{module-path}.
+@racketblock[
+(code:comment "a relative path")
+(in #:module "src.rkt" ....)
+(code:comment "an absolute path")
+(in #:module (file "/home/xiangqi/test/src.rkt" ....))
+(code:comment "a library path")
+(in #:module test/src ....)
+]}
+
+@defform*[((with-behavior f template)
+           (with-behavior f template [renamed ret id]))]{
+Defines the logging behavior of the @racketvarfont{f} function call. The form of @racketvarfont{template}
+is @litchar["@"]@litchar["{"]@racketvarfont{text-body}@litchar["}"]. In @racketvarfont{text-body}, 
+a function's arguments can be accessed by @litchar["@"]@racket[par] where @racket[par] is the 
+parameter's name. By default, @litchar["@"]@racket[ret] reveals the return value of a function. To avoid 
+confusions of referring to some argument with @racket[ret] name rather than the default return value, 
+use @racket[[renamed ret id]] explicitly to rename the symbol of the return value. For example,
+
+@codeblock{
+(with-behavior f @"@"@"{"f takes @"@"x @"and" @"@"y and returns @"@"ret@"}")
+(with-behavior f @"@"@"{"f takes @"@"x @"and" @"@"ret and returns @"@"ret1@"}" [renamed ret ret1])
+}
+
+See @secref["log"] for more information.}
+
+
+@defform[[each-function insert-expr insert-expr ...]]{
+Adds a sequence of @racket[insert-expr] to every function defined in the module.}
+
+@defform/none[[(f f ...) insert-expr insert-expr ...]]{
+Supports function-level matching where @tt{(@racketvarfont{f f} ...)} constrains the scope of 
+a sequence of @racket[insert-expr] to be within one or more functions. The fourth
+clause of the @racketvarfont{match-expr} non-terminal is module-level matching. }
+
+@defform*[#:id at 
+          ([(at location-expr) border-expr border-expr ...]
+           [(at location-expr before-expr) border-expr border-expr ...]
+           [(at location-expr after-expr) border-expr border-expr ...]
+           [(at location-expr before-expr after-expr) border-expr border-expr ...])]{
+Supports expression-level matching of the target expression @racket[location-expr]. For Racket, @racket[location-expr]
+can be any expression in the source program except internal definitions, such as the @racket[(define ....)] form inside a
+function or the @racket[(let ....)] local binding form.  To avoid the confusions of multiple matches of
+@racketvarfont{location-expr} in the target program, specification of @racketvarfont{before-expr} 
+and @racketvarfont{after-expr} can be employed to confine the lexical context of @racketvarfont{location-expr}.
+Expressions within @racketvarfont{location-expr}, @racketvarfont{before-expr} and @racketvarfont{after-expr} can be a legal
+source expression or an expression structure with @litchar["_"] wildcard character matching any legal expression. For 
+example,
+
+@codeblock{
+(at (
+
+}
+
+@defform[[on-entry source-expr source-expr ...]]{}
+@defform[[on-exit source-expr source-expr ...]]{}
+
 There are some points about the language worth noting:
 
 @itemize[
-  @item{With the primitive elements of debugging and means of combination and abstraction 
-        in the language, the Medic language provides the programmer with expressive powers beyond augmenting 
-        the source program with desirable debugging behaviors without changing the source 
-        program.}
-  @item{The @racketvarfont{layer-form} form modularizes debugging code and facilitates organizing debugging traces into
-        different layers.
-        The @racket[#:enable] keyword in @racketvarfont{layer-form} permits enabling and disabling adding to the source code
-        the debugging behaviors described within @racketvarfont{layer-form}, while the debugging definitions
-        within the layer are still available to other layers.  
-        }
-  @item{The forms @tt{(@racket[export] @racketvarfont{id} @racketvarfont{id} ...)} and @tt{(import @racketvarfont{layer-id} @racketvarfont{layer-id} ...)} declare
-        exports and imports of a layer where the @racketvarfont{id} is the identifier of an internal
-        layer definition and the @racketvarfont{layer-id} is some layer identifier.}   
-  @item{The internal layer definitions supports code abstraction and reusability.
-        The identifier @racketvarfont{debug-src-id} in the form @tt{(@racket[def] @racketvarfont{debug-src-id} @racket[#:src] @racketvarfont{source-expr} @racketvarfont{source-expr} ...)} refers
-        to a sequence of source expressions following the @racket[#:src] keyword, and the
-        expression @tt{(@racket[ref] @racketvarfont{debug-src-id})} returns the corresponding source expressions. In a similar way, the
-        identifier @racketvarfont{debug-id} in the form @tt{(@racket[def] @racketvarfont{debug-id} @racket[#:debug] @racketvarfont{match-expr} @racketvarfont{match-expr} ...)} is bound
-        to a sequence of debugging expressions, and the expression @tt{(@racket[ref] @racketvarfont{debug-id})} returns the corresponding
-        debugging expressions.} 
-  @item{In the form @tt{(@racket[in] @racket[#:module] @racketvarfont{module-path match-expr match-expr} ...)}, the specification for @racketvarfont{module-path} 
-        can be three kinds of paths: a relative path, an absolute path, or a library path. For example, the following are
-        acceptable specifications for @racketvarfont{module-path}.
-        @racketblock[
-        (code:comment "a relative path")
-        (in #:module "src.rkt" ....)
-        (code:comment "an absolute path")
-        (in #:module (file "/home/xiangqi/test/src.rkt" ....))
-        (code:comment "a library path")
-        (in #:module test/src ....)
-        ]}
-  @item{The form @tt{(@racket[with-behavior] @racketvarfont{f template})} defines the behavior of the @racketvarfont{f} function, which is 
-                 only useful with the tracing @racket[log] function. See @secref["log"] for more information about the usage.}
-  @item{The @"@" notation provides a way to distinguish debugging primitives from the primitives in the target language where 
-        programmers can mix them in the target program without ambiguity. Currently there are three kinds of debugging 
-        primitives: @"@"@racket[function-name], @"@"@racket[ret], and @"@"@racket[,par] where @racket[par] represents any parameter of 
-        a function and is matched by the parameter name.
-        
-        The @"@"@racket[function-name] primitive exposes the run-time function scope, which is only available to 
-        debuggers, to programmers. For example, the
-        form 
-        
-        [@racket[each-function] [@racket[on-entry] (@racket[log] @racket["function ~a entered"] @"@"@racket[function-name])]]
-        
-        helps programmers keep track of the control flow of the program without manually adding tracing functions in every function
-        likely to be reached at run time.
-        
-        The @"@"@racket[ret] and @"@"@racket[,par] primitives can only be used within @racket[template] in @racket[(with-behavior f template)],
-        where @"@"@racket[ret] contains the return value of @racket[f] function call and @"@"@racket[,par] contains the value of the 
-        parameter @racket[par]. For example, one possible usage might be
-        
-        @racket[(with-behavior f "f takes @,x and @,y and returns @ret")].
-       }
+
   @item{The core of the language's ability to describe how the source program should exhibit the desirable debugging
         behaviors is contained in the @racketvarfont{match-expr}, which describes @emph{where} to focus and @emph{what} to do. 
         
