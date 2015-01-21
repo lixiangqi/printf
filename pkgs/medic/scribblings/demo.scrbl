@@ -25,9 +25,11 @@ We can also run program-starting scripts in the console window of the DrRacket p
 the files, complete paths of programs---depending on the stored location---should be supplied.
 
 @racketblock[
-console prompt: (require medic/core)
-console prompt: (medic "/home/xiangqi/medic/demos/src-medic.rkt")
-console prompt: (debug "/home/xiangqi/medic/demos/src.rkt")
+(require medic/core)]
+@racketblock[
+(medic "/home/xiangqi/medic/demos/src-medic.rkt")]
+@racketblock[
+(debug "/home/xiangqi/medic/demos/src.rkt")
 ]
 
 The following are the demos:

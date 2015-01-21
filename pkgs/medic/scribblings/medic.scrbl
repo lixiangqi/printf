@@ -119,10 +119,11 @@ circumstances, showing the behavior of data is needed. Consider the following ex
 
 When we call @racket[(log (f 3 4))], it produces a tracing log ``(@racket[f] 3 4) = 25'', which reveals no information
 about what the @racket[f] function does. To change the behavior of @racket[(log (f 3 4))], we can modify
-the Medic program by adding @racket[(with-behavior f "Calling f: sum of @,x squared and @,y squared is @ret")]. The @"@" notation
-offers a way to obtain the values of arguments of a function as well as the function returning value. For example, the above
-@"@"@racket[,x] gets the value of @racket[x] and @"@"@racket[ret] keeps the returning value of the @racket[f] function call. 
-Then the call of @racket[(log (f 3 4))] generates ``Calling f: sum of 3 squared and 4 squared is 25''. Programmers have control
+the Medic program by adding 
+@codeblock{
+(with-behavior f @"@"@"{"f: @"@"x squared plus @"@"y squared is @"@"ret@"}")
+}
+Then the call of @racket[(log (f 3 4))] generates ``f: 3 squared plus 4 squared is 25''. Programmers have control
 over writing functions descriptions to obtain desired logging behaviors of function calls. The @racket[with-behavior] forms allows
 programmers to change all logging behaviors of the same function call at different places just by changing the description at
 one place.

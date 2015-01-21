@@ -104,15 +104,16 @@ For example, the following are possible specifications for @racketvarfont{module
 @defform*[((with-behavior f template)
            (with-behavior f template [renamed ret id]))]{
 Defines the logging behavior of the @racketvarfont{f} function call. The form of @racketvarfont{template}
-is @litchar["@"]@litchar["{"]@racketvarfont{text-body}@litchar["}"]. In @racketvarfont{text-body}, 
-a function's arguments can be accessed by @litchar["@"]@racket[par] where @racket[par] is the 
-parameter's name. By default, @litchar["@"]@racket[ret] reveals the return value of a function. To avoid 
+is @litchar["@"]@litchar["{"]@racketvarfont{text-body}@litchar["}"]. In @racketvarfont{text-body},
+@litchar["@"]@racket[expr] enables the evaluation of an expression @racket[expr] with access to functions'
+arguments and return value. A function's arguments can be accessed by @racket[par] where @racket[par] is the 
+parameter's name. By default, @racket[ret] reveals the return value of a function. To avoid 
 confusions of referring to some argument with @racket[ret] name rather than the default return value, 
 use @racket[[renamed ret id]] explicitly to rename the symbol of the return value. For example,
 
 @codeblock{
-(with-behavior f @"@"@"{"f takes @"@"x @"and" @"@"y and returns @"@"ret@"}")
-(with-behavior f @"@"@"{"f takes @"@"x @"and" @"@"ret and returns @"@"ret1@"}" [renamed ret ret1])
+(with-behavior f @"@"@"{"f takes @"@"x and @"@"y and returns @"@"ret@"}")
+(with-behavior f @"@"@"{"f takes @"@"x and @"@"ret and returns @"@"ret1@"}" [renamed ret ret1])
 }
 
 See @secref["log"] for more information.}
