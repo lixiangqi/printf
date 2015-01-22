@@ -4,7 +4,7 @@
 (require "medic-structs.rkt")
 
 (provide (rename-out [module-begin #%module-begin])
-         define log
+         log
          #%app #%top require #%datum
          #%top-interaction
          layer export import def in with-behavior ref each-function
@@ -350,11 +350,6 @@
       
       [(assert cond)
        (attach-stx-property stx #'cond)]
-      
-      [(define (var) expr ...)
-       (quasisyntax/loc stx
-         (define (var)
-           #,@(map interpret-src-expr (syntax->list #'(expr ...)))))]
       
       [else (traverse stx)]))
   
