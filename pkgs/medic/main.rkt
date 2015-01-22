@@ -101,7 +101,7 @@
        (if flag
            (let ([fn (path->string 
                       (resolved-module-path-name 
-                       ((current-module-name-resolver) (syntax->datum #'id) #f #f)))])
+                       ((current-module-name-resolver) (syntax->datum #'id) #f #f #f)))])
              (unless (hash-has-key? insert-table fn)
                (hash-set! insert-table fn (make-hash)))
              (unless (hash-has-key? template fn)

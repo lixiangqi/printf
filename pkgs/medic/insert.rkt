@@ -312,9 +312,11 @@
                                         (arg-list
                                          #,@(map (lambda (e) (wrap-context e bindings id))
                                                  entry-exprs)
-                                         #,@new-bodies
-                                         #,@(map (lambda (e) (wrap-context e bindings id))
-                                                 exit-exprs))))
+                                         (begin0
+                                           (begin
+                                             #,@new-bodies)
+                                           #,@(map (lambda (e) (wrap-context e bindings id))
+                                                   exit-exprs)))))
                (if (null? exit-exprs)
                    with-entry-body
                    (if internal-let?
