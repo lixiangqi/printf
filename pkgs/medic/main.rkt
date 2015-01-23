@@ -8,7 +8,7 @@
          #%app #%top require #%datum
          #%top-interaction
          layer export import def in with-behavior ref each-function
-         on-entry on-exit at)
+         on-entry on-exit at function-name)
 
 
 (module reader syntax/module-reader
@@ -376,3 +376,4 @@
 (define on-entry #f)
 (define on-exit #f)
 (define at #f)
+(define function-name #f)
