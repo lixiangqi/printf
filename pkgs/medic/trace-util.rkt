@@ -103,7 +103,8 @@
     [(hash? d) 
      (for-each (lambda (k)
                  (hash-set! d k (convert-value (hash-ref d k))))
-               (hash-keys d))]
+               (hash-keys d))
+     (hash-copy d)]
     [else d]))
 
 (define (record-changed id-stx label val)
